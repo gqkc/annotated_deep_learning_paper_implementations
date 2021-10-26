@@ -44,16 +44,16 @@ class Configs(BaseConfigs):
     diffusion: DenoiseDiffusion
 
     # Number of channels in the image. $3$ for RGB.
-    image_channels: int = 3
+    image_channels: int = 1
     # Image size
-    image_size: int = 32
+    image_size: int = 28
     # Number of channels in the initial feature map
     n_channels: int = 64
     # The list of channel numbers at each resolution.
     # The number of channels is `channel_multipliers[i] * n_channels`
-    channel_multipliers: List[int] = [1, 2, 2, 4]
+    channel_multipliers: List[int] = [1, 2, 4]
     # The list of booleans that indicate whether to use attention at each resolution
-    is_attention: List[int] = [False, False, False, True]
+    is_attention: List[int] = [False, False, True]
 
     # Number of time steps $T$
     n_steps: int = 1_000
@@ -65,7 +65,7 @@ class Configs(BaseConfigs):
     learning_rate: float = 2e-5
 
     # Number of training epochs
-    epochs: int = 1_000
+    epochs: int = 1_00
 
     # Dataset
     dataset: torch.utils.data.Dataset
@@ -154,47 +154,6 @@ class Configs(BaseConfigs):
             tracker.new_line()
             # Save the model
             experiment.save_checkpoint()
-
-
-class CelebADataset(torch.utils.data.Dataset):
-    """
-    ### CelebA HQ dataset
-    """
-
-    def __init__(self, image_size: int):
-        super().__init__()
-
-        # CelebA images folder
-        folder = lab.get_data_path() / 'celebA'
-        # List of files
-        self._files = [p for p in folder.glob(f'**/*.jpg')]
-
-        # Transformations to resize the image and convert to tensor
-        self._transform = torchvision.transforms.Compose([
-            torchvision.transforms.Resize(image_size),
-            torchvision.transforms.ToTensor(),
-        ])
-
-    def __len__(self):
-        """
-        Size of the dataset
-        """
-        return len(self._files)
-
-    def __getitem__(self, index: int):
-        """
-        Get an image
-        """
-        img = Image.open(self._files[index])
-        return self._transform(img)
-
-
-@option(Configs.dataset, 'CelebA')
-def celeb_dataset(c: Configs):
-    """
-    Create CelebA dataset
-    """
-    return CelebADataset(c.image_size)
 
 
 class MNISTDataset(torchvision.datasets.MNIST):
