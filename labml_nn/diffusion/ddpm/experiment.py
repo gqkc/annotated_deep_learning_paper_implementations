@@ -56,7 +56,7 @@ class Configs(BaseConfigs):
     is_attention: List[int] = [False, False, True]
 
     # Number of time steps $T$
-    n_steps: int = 1_000
+    n_steps: int = 200
     # Batch size
     batch_size: int = 64
     # Number of samples to generate
@@ -65,7 +65,7 @@ class Configs(BaseConfigs):
     learning_rate: float = 2e-5
 
     # Number of training epochs
-    epochs: int = 1_00
+    epochs: int = 20
 
     # Dataset
     dataset: torch.utils.data.Dataset
