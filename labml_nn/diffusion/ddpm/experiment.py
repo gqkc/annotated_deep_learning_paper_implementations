@@ -118,6 +118,7 @@ class Configs(BaseConfigs):
             # Log samples
             tracker.save('sample', x)
 
+
     def train(self):
         """
         ### Train
