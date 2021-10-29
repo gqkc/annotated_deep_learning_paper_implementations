@@ -157,7 +157,7 @@ class Configs(BaseConfigs):
         """
         for _ in monit.loop(self.epochs):
             # Train the model
-            # self.train()
+            self.train()
             # Sample some images
             self.sample()
             # New line in the console
