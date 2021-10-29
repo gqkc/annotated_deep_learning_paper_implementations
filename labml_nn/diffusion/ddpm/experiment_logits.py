@@ -15,23 +15,20 @@ Save the images inside [`data/celebA` folder](#dataset_path).
 The paper had used a exponential moving average of the model with a decay of $0.9999$. We have skipped this for
 simplicity.
 """
+from datetime import datetime
 from typing import List
 
 import torch
 import torch.utils.data
 import torchvision
-from PIL import Image
-
-from labml import lab, tracker, experiment, monit
+import wandb
+from labml import tracker, experiment, monit
 from labml.configs import BaseConfigs, option
 from labml_helpers.device import DeviceConfigs
+from torch.utils.data import DataLoader
+
 from labml_nn.diffusion.ddpm import DenoiseDiffusion
 from labml_nn.diffusion.ddpm.unet import UNet
-import wandb
-from datetime import datetime
-from torch.utils.data import DataLoader
-import utils
-import os
 
 
 class Configs(BaseConfigs):
@@ -72,20 +69,13 @@ class Configs(BaseConfigs):
     # Number of training epochs
     epochs: int = 1
 
-    load_path = "/Users/guillaumequispe/PycharmProjects/mixturevqvae/output/trained_models/fashionmnist/vqvae_/10_26_2021_15_38_35"
-    train_dataset_path: str = os.path.join(load_path, "train_latent_dataset.pt")
-
     # Dataset
-    dataset: torch.utils.data.Dataset = torch.load(train_dataset_path, map_location=device.device)
+    dataset: torch.utils.data.Dataset
     # Dataloader
     data_loader: torch.utils.data.DataLoader
 
     # Adam optimizer
     optimizer: torch.optim.Adam
-
-    load_path = "../../../data"
-
-    vqvae_model: torch.nn.Module = torch.load(os.path.join(load_path, "model.pt"), map_location=device.device)
 
     def init(self):
         # Create $\textcolor{cyan}{\epsilon_\theta}(x_t, t)$ model
@@ -103,6 +93,8 @@ class Configs(BaseConfigs):
             device=self.device,
         )
 
+        self.vqvae_model: torch.nn.Module = torch.load(args.vq_path, map_location=self.device)
+        self.dataset == torch.load(args.train_latent_path, map_location=self.device)
         # Create dataloader
         self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True, pin_memory=True)
         # Create optimizer
@@ -252,4 +244,12 @@ def main():
 
 #
 if __name__ == '__main__':
+    import argparse
+
+    parser = argparse.ArgumentParser(description='parser')
+    parser.add_argument('--vq_path', type=str)
+    parser.add_argument('--train_dataset_path', type=str)
+
+    global args
+    args = parser.parse_args()
     main()
