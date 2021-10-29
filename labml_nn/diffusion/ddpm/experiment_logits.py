@@ -49,7 +49,7 @@ class Configs(BaseConfigs):
     diffusion: DenoiseDiffusion
 
     # Number of channels in the image. $3$ for RGB.
-    image_channels: int = 64
+    image_channels: int = 32
     # Image size
     image_size: int = 8
     # Number of channels in the initial feature map
@@ -128,8 +128,10 @@ class Configs(BaseConfigs):
                 x = self.diffusion.p_sample(x, x.new_full((self.n_samples,), t, dtype=torch.long))
 
             # Log samples
-            tracker.save('sample', x)
-            wandb.log({"sample": [wandb.Image(sample) for sample in x]})
+            samples_code = x.argmax(1).to(x.device)
+            samples = self.vqvae_model.decode(samples_code)
+            tracker.save('sample', samples)
+            wandb.log({"sample": [wandb.Image(sample) for sample in samples]})
 
     def train(self):
         """
@@ -160,7 +162,7 @@ class Configs(BaseConfigs):
         """
         for _ in monit.loop(self.epochs):
             # Train the model
-            self.train()
+            # self.train()
             # Sample some images
             self.sample()
             # New line in the console
