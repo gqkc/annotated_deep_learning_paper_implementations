@@ -77,7 +77,7 @@ class Configs(BaseConfigs):
     # Adam optimizer
     optimizer: torch.optim.Adam
 
-    train_dataset_path:str
+    train_dataset_path: str
 
     def init(self):
         # Create $\textcolor{cyan}{\epsilon_\theta}(x_t, t)$ model
@@ -96,7 +96,7 @@ class Configs(BaseConfigs):
         )
 
         self.vqvae_model = torch.load(args.vq_path, map_location=self.device)
-        self.train_dataset_path=args.train_dataset_path
+        self.train_dataset_path = args.train_dataset_path
         self.dataset == torch.load(args.train_dataset_path, map_location=self.device)
         # Create dataloader
         self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True, pin_memory=True)
@@ -205,7 +205,7 @@ def latent_dataset(c: Configs):
     """
     Create MNIST dataset
     """
-    train_dataset = torch.load(c.train_dataset_path, map_location=c.device)
+    train_dataset = torch.load(c.train_dataset_path, map_location="cpu")
     full_train = next(iter(DataLoader(train_dataset, batch_size=len(train_dataset))))[0]
     train_mean = full_train.exp().mean(0).mean(-1).unsqueeze(-1)
     transform = get_transform_exp_mean(train_mean)
