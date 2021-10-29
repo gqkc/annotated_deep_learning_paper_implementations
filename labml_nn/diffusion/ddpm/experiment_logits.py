@@ -29,6 +29,9 @@ from labml_nn.diffusion.ddpm import DenoiseDiffusion
 from labml_nn.diffusion.ddpm.unet import UNet
 import wandb
 from datetime import datetime
+from torch.utils.data import DataLoader
+import utils
+import os
 
 
 class Configs(BaseConfigs):
@@ -46,9 +49,9 @@ class Configs(BaseConfigs):
     diffusion: DenoiseDiffusion
 
     # Number of channels in the image. $3$ for RGB.
-    image_channels: int = 1
+    image_channels: int = 64
     # Image size
-    image_size: int = 28
+    image_size: int = 8
     # Number of channels in the initial feature map
     n_channels: int = 64
     # The list of channel numbers at each resolution.
@@ -67,15 +70,22 @@ class Configs(BaseConfigs):
     learning_rate: float = 2e-5
 
     # Number of training epochs
-    epochs: int = 10
+    epochs: int = 1
+
+    load_path = "/Users/guillaumequispe/PycharmProjects/mixturevqvae/output/trained_models/fashionmnist/vqvae_/10_26_2021_15_38_35"
+    train_dataset_path: str = os.path.join(load_path, "train_latent_dataset.pt")
 
     # Dataset
-    dataset: torch.utils.data.Dataset
+    dataset: torch.utils.data.Dataset = torch.load(train_dataset_path, map_location=device.device)
     # Dataloader
     data_loader: torch.utils.data.DataLoader
 
     # Adam optimizer
     optimizer: torch.optim.Adam
+
+    load_path = "../../../data"
+
+    vqvae_model: torch.nn.Module = torch.load(os.path.join(load_path, "model.pt"), map_location=device.device)
 
     def init(self):
         # Create $\textcolor{cyan}{\epsilon_\theta}(x_t, t)$ model
@@ -159,29 +169,52 @@ class Configs(BaseConfigs):
             experiment.save_checkpoint()
 
 
-class MNISTDataset(torchvision.datasets.MNIST):
-    """
-    ### MNIST dataset
-    """
+class TransformDataset(torch.utils.data.Dataset):
+    def __init__(self, dataset=None, transform=None):
+        self.dataset = dataset
+        self.transform = transform
 
-    def __init__(self, image_size):
-        transform = torchvision.transforms.Compose([
-            torchvision.transforms.Resize(image_size),
-            torchvision.transforms.ToTensor(),
-        ])
+    def __getitem__(self, index):
+        data, target = self.dataset[index]
 
-        super().__init__(str(lab.get_data_path()), train=True, download=True, transform=transform)
+        if self.transform is not None:
+            data = self.transform(data)
+        return data  # , target
 
-    def __getitem__(self, item):
-        return super().__getitem__(item)[0]
+    def __len__(self):
+        return self.dataset.__len__()
 
 
-@option(Configs.dataset, 'MNIST')
-def mnist_dataset(c: Configs):
+class Exp(object):
+    def __call__(self, sample):
+        return sample.exp()
+
+
+class PermuteDetach(object):
+    def __call__(self, sample):
+        return sample.detach().permute(2, 0, 1)
+
+
+def get_transform_exp_mean(mean):
+    class Mean(object):
+        def __call__(self, sample):
+            return (sample - mean)
+
+    return torchvision.transforms.Compose([Exp(), Mean(), PermuteDetach()])
+
+
+@option(Configs.dataset, 'latent')
+def latent_dataset(c: Configs):
     """
     Create MNIST dataset
     """
-    return MNISTDataset(c.image_size)
+    train_dataset = torch.load(c.train_dataset_path, map_location=c.device)
+    full_train = next(iter(DataLoader(train_dataset, batch_size=len(train_dataset))))[0]
+    train_mean = full_train.exp().mean(0).mean(-1).unsqueeze(-1)
+    transform = get_transform_exp_mean(train_mean)
+
+    train_dataset = TransformDataset(train_dataset, transform=transform)
+    return train_dataset
 
 
 def main():
@@ -204,7 +237,7 @@ def main():
     run_name = datetime.now().strftime("train-%Y-%m-%d-%H-%M")
 
     run = wandb.init(
-        project="diffusion",
+        project="diffusion_logits",
         entity='gkqc',
         config=None,
         name=run_name,

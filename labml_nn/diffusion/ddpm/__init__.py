@@ -166,7 +166,7 @@ import torch.nn.functional as F
 import torch.utils.data
 from torch import nn
 
-from labml_nn.diffusion.ddpm.utils import gather
+from labml_nn.diffusion.ddpm.ddpm_utils import gather
 
 
 class DenoiseDiffusion:
