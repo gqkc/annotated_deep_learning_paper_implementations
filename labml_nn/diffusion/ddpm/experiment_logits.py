@@ -99,7 +99,8 @@ class Configs(BaseConfigs):
         self.train_dataset_path = args.train_dataset_path
         self.dataset == torch.load(args.train_dataset_path, map_location=self.device)
         # Create dataloader
-        self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True, pin_memory=True)
+        self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True, pin_memory=True,
+                                                       drop_last=True)
         # Create optimizer
         self.optimizer = torch.optim.Adam(self.eps_model.parameters(), lr=self.learning_rate)
 
