@@ -77,6 +77,8 @@ class Configs(BaseConfigs):
     # Adam optimizer
     optimizer: torch.optim.Adam
 
+    train_dataset_path:str
+
     def init(self):
         # Create $\textcolor{cyan}{\epsilon_\theta}(x_t, t)$ model
         self.eps_model = UNet(
@@ -94,7 +96,8 @@ class Configs(BaseConfigs):
         )
 
         self.vqvae_model = torch.load(args.vq_path, map_location=self.device)
-        self.dataset == torch.load(args.train_latent_path, map_location=self.device)
+        self.train_dataset_path=args.train_dataset_path
+        self.dataset == torch.load(args.train_dataset_path, map_location=self.device)
         # Create dataloader
         self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True, pin_memory=True)
         # Create optimizer
