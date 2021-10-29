@@ -73,7 +73,7 @@ class Configs(BaseConfigs):
     dataset: torch.utils.data.Dataset
     # Dataloader
     data_loader: torch.utils.data.DataLoader
-
+    vqvae_model: torch.nn.Module
     # Adam optimizer
     optimizer: torch.optim.Adam
 
@@ -93,7 +93,7 @@ class Configs(BaseConfigs):
             device=self.device,
         )
 
-        self.vqvae_model: torch.nn.Module = torch.load(args.vq_path, map_location=self.device)
+        self.vqvae_model = torch.load(args.vq_path, map_location=self.device)
         self.dataset == torch.load(args.train_latent_path, map_location=self.device)
         # Create dataloader
         self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True, pin_memory=True)
