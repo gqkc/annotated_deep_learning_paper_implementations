@@ -27,6 +27,8 @@ from labml.configs import BaseConfigs, option
 from labml_helpers.device import DeviceConfigs
 from labml_nn.diffusion.ddpm import DenoiseDiffusion
 from labml_nn.diffusion.ddpm.unet import UNet
+import wandb
+from datetime import datetime
 
 
 class Configs(BaseConfigs):
@@ -65,7 +67,7 @@ class Configs(BaseConfigs):
     learning_rate: float = 2e-5
 
     # Number of training epochs
-    epochs: int = 2
+    epochs: int = 1
 
     # Dataset
     dataset: torch.utils.data.Dataset
@@ -117,7 +119,7 @@ class Configs(BaseConfigs):
 
             # Log samples
             tracker.save('sample', x)
-
+            wandb.log({"sample": [wandb.Image(sample) for sample in x]})
 
     def train(self):
         """
@@ -148,7 +150,7 @@ class Configs(BaseConfigs):
         """
         for _ in monit.loop(self.epochs):
             # Train the model
-            self.train()
+            # self.train()
             # Sample some images
             self.sample()
             # New line in the console
@@ -199,9 +201,18 @@ def main():
     # Set models for saving and loading
     experiment.add_pytorch_models({'eps_model': configs.eps_model})
 
+    run_name = datetime.now().strftime("train-%Y-%m-%d-%H-%M")
+
+    run = wandb.init(
+        project="diffusion",
+        entity='gkqc',
+        config=None,
+        name=run_name,
+    )
     # Start and run the training loop
     with experiment.start():
         configs.run()
+    run.finish()
 
 
 #
