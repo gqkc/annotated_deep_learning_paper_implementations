@@ -150,7 +150,7 @@ class Configs(BaseConfigs):
             # Take an optimization step
             self.optimizer.step()
             # Track the loss
-            tracker.save('loss', loss)
+            #tracker.save('loss', loss)
 
     def run(self):
         """
