@@ -32,7 +32,7 @@ class DenoiseDiffusionKL(DenoiseDiffusion):
         # $\bar\alpha_t = \prod_{s=1}^t \alpha_s$
         self.alpha_bar = torch.cumprod(self.alpha, dim=0)
 
-        self.alpha_bar_prev = torch.tensor(np.append(1., self.alpha_bar[:-1]))
+        self.alpha_bar_prev = torch.hstack([torch.tensor(1.).to(self.alpha_bar.device), self.alpha_bar[:-1]])
 
         # $T$
         self.n_steps = n_steps
