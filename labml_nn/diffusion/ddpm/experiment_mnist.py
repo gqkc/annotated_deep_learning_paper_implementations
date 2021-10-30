@@ -15,20 +15,20 @@ Save the images inside [`data/celebA` folder](#dataset_path).
 The paper had used a exponential moving average of the model with a decay of $0.9999$. We have skipped this for
 simplicity.
 """
+from datetime import datetime
 from typing import List
 
 import torch
 import torch.utils.data
 import torchvision
-from PIL import Image
-
+import wandb
 from labml import lab, tracker, experiment, monit
 from labml.configs import BaseConfigs, option
 from labml_helpers.device import DeviceConfigs
+
 from labml_nn.diffusion.ddpm import DenoiseDiffusion
+from labml_nn.diffusion.ddpm.ddpm_kl import DenoiseDiffusionKL
 from labml_nn.diffusion.ddpm.unet import UNet
-import wandb
-from datetime import datetime
 
 
 class Configs(BaseConfigs):
@@ -86,8 +86,9 @@ class Configs(BaseConfigs):
             is_attn=self.is_attention,
         ).to(self.device)
 
+        ddpm_class = DenoiseDiffusion if not args.kl else DenoiseDiffusionKL
         # Create [DDPM class](index.html)
-        self.diffusion = DenoiseDiffusion(
+        self.diffusion = ddpm_class(
             eps_model=self.eps_model,
             n_steps=self.n_steps,
             device=self.device,
@@ -217,4 +218,11 @@ def main():
 
 #
 if __name__ == '__main__':
+    import argparse
+
+    parser = argparse.ArgumentParser(description='parser')
+    parser.add_argument('--kl', type=bool, default=False)
+
+    global args
+    args = parser.parse_args()
     main()
