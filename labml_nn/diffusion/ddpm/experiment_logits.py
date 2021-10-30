@@ -239,7 +239,7 @@ def main():
 
     run = wandb.init(
         project="diffusion_logits",
-        entity='gkqc',
+        entity='cmap_vq',
         config=None,
         name=run_name,
     )
