@@ -54,18 +54,18 @@ class Configs(BaseConfigs):
     n_channels: int = 64
     # The list of channel numbers at each resolution.
     # The number of channels is `channel_multipliers[i] * n_channels`
-    channel_multipliers: List[int] = [1, 2, 2]
+    channel_multipliers: List[int] = [1, 2, 4]
     # The list of booleans that indicate whether to use attention at each resolution
-    is_attention: List[int] = [False, False, True]
+    is_attention: List[int] = [True, True, True]
 
     # Number of time steps $T$
-    n_steps: int = 1000
+    n_steps: int = 200
     # Batch size
     batch_size: int = 64
     # Number of samples to generate
     n_samples: int = 16
     # Learning rate
-    learning_rate: float = 1e-5
+    learning_rate: float = 2e-5
 
     # Number of training epochs
     epochs: int = 1000
