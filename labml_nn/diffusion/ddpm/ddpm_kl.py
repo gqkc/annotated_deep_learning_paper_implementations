@@ -94,7 +94,7 @@ class DenoiseDiffusionKL(DenoiseDiffusion):
         model_prob_mean, log_model_gauss_prob_var, log_model_gauss_prob_var_clipped = self.posterior(
             u_0=log_x_recon, u_t=xt, t=t)
 
-        noise = torch.rand(size=xt.shape)
+        noise = torch.rand(size=xt.shape, device=xt.device)
 
         sample = model_prob_mean + torch.exp(0.5 * log_model_gauss_prob_var_clipped) * noise
 
