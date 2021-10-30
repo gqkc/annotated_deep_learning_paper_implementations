@@ -164,7 +164,7 @@ class DenoiseDiffusionKL(DenoiseDiffusion):
         kl_mean = mean_except_batch(kl) / torch.log(torch.tensor(2.))
 
         # handle the case t=1 for the L0 term
-        model_var = torch.exp(log_model_gauss_prob_var_clipped) * torch.ones(x0.shape)
+        model_var = torch.exp(log_model_gauss_prob_var_clipped) * torch.ones(x0.shape, device=x0.device)
         decoder_nll = self.gaussian_nll(input=model_prob_mean, var=model_var,
                                         target=x0)
         decoder_nll_mean = mean_except_batch(decoder_nll) / torch.log(torch.tensor(2.))
