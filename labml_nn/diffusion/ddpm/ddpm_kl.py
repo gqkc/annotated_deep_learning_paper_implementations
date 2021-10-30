@@ -87,33 +87,18 @@ class DenoiseDiffusionKL(DenoiseDiffusion):
         """
         #### Sample from $\textcolor{cyan}{p_\theta}(x_{t-1}|x_t)$
 
-        \begin{align}
-        \textcolor{cyan}{p_\theta}(x_{t-1} | x_t) &= \mathcal{N}\big(x_{t-1};
-        \textcolor{cyan}{\mu_\theta}(x_t, t), \sigma_t^2 \mathbf{I} \big) \\
-        \textcolor{cyan}{\mu_\theta}(x_t, t)
-          &= \frac{1}{\sqrt{\alpha_t}} \Big(x_t -
-            \frac{\beta_t}{\sqrt{1-\bar\alpha_t}}\textcolor{cyan}{\epsilon_\theta}(x_t, t) \Big)
-        \end{align}
         """
 
-        # $\textcolor{cyan}{\epsilon_\theta}(x_t, t)$
-        eps_theta = self.eps_model(xt, t)
-        # [gather](utils.html) $\bar\alpha_t$
-        alpha_bar = gather(self.alpha_bar, t)
-        # $\alpha_t$
-        alpha = gather(self.alpha, t)
-        # $\frac{\beta}{\sqrt{1-\bar\alpha_t}}$
-        eps_coef = (1 - alpha) / (1 - alpha_bar) ** .5
-        # $$\frac{1}{\sqrt{\alpha_t}} \Big(x_t -
-        #      \frac{\beta_t}{\sqrt{1-\bar\alpha_t}}\textcolor{cyan}{\epsilon_\theta}(x_t, t) \Big)$$
-        mean = 1 / (alpha ** 0.5) * (xt - eps_coef * eps_theta)
-        # $\sigma^2$
-        var = gather(self.sigma2, t)
+        # p(xt-1 / xt)
+        log_x_recon = self.eps_model(xt, t)
+        model_prob_mean, log_model_gauss_prob_var, log_model_gauss_prob_var_clipped = self.posterior(
+            u_0=log_x_recon, u_t=xt, t=t)
 
-        # $\epsilon \sim \mathcal{N}(\mathbf{0}, \mathbf{I})$
-        eps = torch.randn(xt.shape, device=xt.device)
-        # Sample
-        return mean + (var ** .5) * eps
+        noise = torch.rand(size=xt.shape)
+
+        sample = model_prob_mean + torch.exp(0.5 * log_model_gauss_prob_var_clipped) * noise
+
+        return sample
 
     def posterior(self, u_0, t, u_t):
         """

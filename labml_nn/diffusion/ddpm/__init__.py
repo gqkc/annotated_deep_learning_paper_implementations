@@ -233,7 +233,8 @@ class DenoiseDiffusion:
         """
         #### Sample from $\textcolor{cyan}{p_\theta}(x_{t-1}|x_t)$
 
-        \begin{align}
+        \begin{align}                x = self.diffusion.p_sample(x, x.new_full((self.n_samples,), t, dtype=torch.long))
+
         \textcolor{cyan}{p_\theta}(x_{t-1} | x_t) &= \mathcal{N}\big(x_{t-1};
         \textcolor{cyan}{\mu_\theta}(x_t, t), \sigma_t^2 \mathbf{I} \big) \\
         \textcolor{cyan}{\mu_\theta}(x_t, t)
