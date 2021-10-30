@@ -25,14 +25,14 @@ class DenoiseDiffusionKL(DenoiseDiffusion):
         self.eps_model = eps_model
 
         # Create $\beta_1, \dots, \beta_T$ linearly increasing variance schedule
-        self.beta = torch.linspace(0.0001, 0.02, n_steps).to(device)
+        self.beta = torch.linspace(0.0001, 0.02, n_steps).cpu()
 
         # $\alpha_t = 1 - \beta_t$
         self.alpha = 1. - self.beta
         # $\bar\alpha_t = \prod_{s=1}^t \alpha_s$
-        self.alpha_bar = torch.cumprod(self.alpha, dim=0)
+        self.alpha_bar = torch.cumprod(self.alpha, dim=0).cpu()
 
-        self.alpha_bar_prev = torch.hstack([torch.tensor(1.).to(self.alpha_bar.device), self.alpha_bar[:-1]])
+        self.alpha_bar_prev = torch.hstack([torch.tensor(1.), self.alpha_bar[:-1]])
 
         # $T$
         self.n_steps = n_steps
@@ -45,8 +45,8 @@ class DenoiseDiffusionKL(DenoiseDiffusion):
         self.posterior_variance = self.beta * (1. - self.alpha_bar_prev) / (1. - self.alpha_bar)
         # below: log calculation clipped because the posterior variance is 0 at the beginning of the diffusion chain
         self.posterior_log_variance_clipped = torch.tensor(
-            np.log(np.append(self.posterior_variance[1].cpu(), self.posterior_variance[1:].cpu())))
-        self.posterior_mean_coef1 = self.beta * np.sqrt(self.alpha_bar_prev.cpu()) / (1. - self.alpha_bar.cpu())
+            np.log(np.append(self.posterior_variance[1], self.posterior_variance[1:])))
+        self.posterior_mean_coef1 = self.beta * np.sqrt(self.alpha_bar_prev) / (1. - self.alpha_bar)
         self.posterior_mean_coef2 = (1. - self.alpha_bar_prev) * torch.sqrt(self.alpha) / (1. - self.alpha_bar)
 
     def q_xt_x0(self, x0: torch.Tensor, t: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
