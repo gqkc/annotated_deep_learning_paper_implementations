@@ -206,7 +206,7 @@ def main():
 
     run = wandb.init(
         project="diffusion_mnist",
-        entity='gkqc',
+        entity='cmap_vq',
         config=None,
         name=run_name,
     )
