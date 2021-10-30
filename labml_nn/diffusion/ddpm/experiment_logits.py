@@ -64,10 +64,10 @@ class Configs(BaseConfigs):
     # Number of samples to generate
     n_samples: int = 16
     # Learning rate
-    learning_rate: float = 2e-5
+    learning_rate: float = 1e-5
 
     # Number of training epochs
-    epochs: int = 50
+    epochs: int = 100
 
     # Dataset
     dataset: torch.utils.data.Dataset
