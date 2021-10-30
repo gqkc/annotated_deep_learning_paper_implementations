@@ -58,7 +58,7 @@ class Configs(BaseConfigs):
     is_attention: List[int] = [False, False, True]
 
     # Number of time steps $T$
-    n_steps: int = 200
+    n_steps: int = 400
     # Batch size
     batch_size: int = 64
     # Number of samples to generate
