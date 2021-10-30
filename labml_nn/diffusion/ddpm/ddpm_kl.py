@@ -46,7 +46,7 @@ class DenoiseDiffusionKL(DenoiseDiffusion):
         # below: log calculation clipped because the posterior variance is 0 at the beginning of the diffusion chain
         self.posterior_log_variance_clipped = torch.tensor(
             np.log(np.append(self.posterior_variance[1].cpu(), self.posterior_variance[1:].cpu())))
-        self.posterior_mean_coef1 = self.beta * np.sqrt(self.alpha_bar_prev) / (1. - self.alpha_bar)
+        self.posterior_mean_coef1 = self.beta * np.sqrt(self.alpha_bar_prev.cpu()) / (1. - self.alpha_bar.cpu())
         self.posterior_mean_coef2 = (1. - self.alpha_bar_prev) * torch.sqrt(self.alpha) / (1. - self.alpha_bar)
 
     def q_xt_x0(self, x0: torch.Tensor, t: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
