@@ -28,6 +28,7 @@ from labml_helpers.device import DeviceConfigs
 from torch.utils.data import DataLoader
 
 from labml_nn.diffusion.ddpm import DenoiseDiffusion
+from labml_nn.diffusion.ddpm.ddpm_kl import DenoiseDiffusionKL
 from labml_nn.diffusion.ddpm.unet import UNet
 
 
@@ -88,8 +89,9 @@ class Configs(BaseConfigs):
             is_attn=self.is_attention,
         ).to(self.device)
 
+        ddpm_class = DenoiseDiffusion if not args.kl else DenoiseDiffusionKL
         # Create [DDPM class](index.html)
-        self.diffusion = DenoiseDiffusion(
+        self.diffusion = ddpm_class(
             eps_model=self.eps_model,
             n_steps=self.n_steps,
             device=self.device,
@@ -254,6 +256,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='parser')
     parser.add_argument('--vq_path', type=str)
     parser.add_argument('--train_dataset_path', type=str)
+    parser.add_argument('--kl', type=bool, default=False)
 
     global args
     args = parser.parse_args()
