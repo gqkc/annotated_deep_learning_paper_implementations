@@ -59,7 +59,7 @@ class Configs(BaseConfigs):
     is_attention: List[int] = [False, False, True]
 
     # Number of time steps $T$
-    n_steps: int = 500
+    n_steps: int
     # Batch size
     batch_size: int = 64
     # Number of samples to generate
@@ -88,6 +88,8 @@ class Configs(BaseConfigs):
         full_train = next(iter(DataLoader(dataset, batch_size=len(dataset))))[0]
         train_mean = full_train.exp().mean(0).mean(-1).unsqueeze(-1)
         self.image_size, self.image_channels = full_train.size(1), full_train.size(-1)
+
+        self.n_steps = args.n_steps
 
         self.dataset = TransformDataset(dataset, transform=get_transform_exp_mean(train_mean))
 
@@ -284,6 +286,7 @@ if __name__ == '__main__':
     parser.add_argument('--vq_path', type=str)
     parser.add_argument('--train_dataset_path', type=str)
     parser.add_argument('--kl', type=bool, default=False)
+    parser.add_argument('--n_steps', type=int, default=200)
 
     global args
     args = parser.parse_args()
