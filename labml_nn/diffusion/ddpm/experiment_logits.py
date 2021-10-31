@@ -83,6 +83,7 @@ class Configs(BaseConfigs):
     def init(self):
 
         self.vqvae_model = torch.load(args.vq_path, map_location=self.device)
+        self.vqvae_model.eval()
         self.train_dataset_path = args.train_dataset_path
         dataset = torch.load(args.train_dataset_path, map_location="cpu")
         full_train = next(iter(DataLoader(dataset, batch_size=len(dataset))))[0]
