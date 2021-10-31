@@ -94,7 +94,7 @@ class Configs(BaseConfigs):
         # Create dataloader
         self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True, pin_memory=True,
                                                        drop_last=True)
-        
+
         # Create $\textcolor{cyan}{\epsilon_\theta}(x_t, t)$ model
         self.eps_model = UNet(
             image_channels=self.image_channels,

@@ -291,7 +291,7 @@ class Downsample(nn.Module):
 
     def __init__(self, n_channels):
         super().__init__()
-        self.conv = nn.Conv2d(n_channels, n_channels, (3, 3), (2, 2), (1, 1), groups=n_channels)
+        self.conv = nn.Conv2d(n_channels, n_channels, (3, 3), (2, 2), (1, 1))
 
     def forward(self, x: torch.Tensor, t: torch.Tensor):
         # `t` is not used, but it's kept in the arguments because for the attention layer function signature
@@ -322,8 +322,7 @@ class UNet(Module):
         n_resolutions = len(ch_mults)
 
         # Project image into feature map
-        self.image_proj = nn.Conv2d(image_channels, n_channels, kernel_size=(3, 3), padding=(1, 1),
-                                    groups=image_channels)
+        self.image_proj = nn.Conv2d(image_channels, n_channels, kernel_size=(3, 3), padding=(1, 1))
 
         # Time embedding layer. Time embedding has `n_channels * 4` channels
         self.time_emb = TimeEmbedding(n_channels * 4)
