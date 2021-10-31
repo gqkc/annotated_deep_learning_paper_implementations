@@ -54,9 +54,9 @@ class Configs(BaseConfigs):
     n_channels: int = 64
     # The list of channel numbers at each resolution.
     # The number of channels is `channel_multipliers[i] * n_channels`
-    channel_multipliers: List[int] = [1, 2, 4]
+    channel_multipliers: List[int] = [1, 2]
     # The list of booleans that indicate whether to use attention at each resolution
-    is_attention: List[int] = [True, True, True]
+    is_attention: List[int] = [True, True]
 
     # Number of time steps $T$
     n_steps: int = 200
