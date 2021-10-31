@@ -140,7 +140,7 @@ class Configs(BaseConfigs):
     def reconstruct(self):
         with torch.no_grad():
             number_of_rec = min(self.n_samples, self.data_loader.batch_size)
-            originals = next(iter(self.data_loader))[:number_of_rec]
+            originals = next(iter(self.data_loader))[:number_of_rec].to(self.device)
             t = torch.ones((originals.size(0),), device=originals.device, dtype=torch.long) * self.n_steps - 1
             xT = self.diffusion.q_sample(x0=originals, t=t)
             x0_tilde, _, reconstructions = self.sample(x=xT)
