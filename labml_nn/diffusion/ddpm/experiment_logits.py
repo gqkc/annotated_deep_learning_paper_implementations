@@ -99,7 +99,7 @@ class Configs(BaseConfigs):
 
         self.vqvae_model = torch.load(args.vq_path, map_location=self.device)
         self.train_dataset_path = args.train_dataset_path
-        dataset = torch.load(args.train_dataset_path, map_location=self.device)
+        dataset = torch.load(args.train_dataset_path, map_location="cpu")
         full_train = next(iter(DataLoader(dataset, batch_size=len(dataset))))[0]
         train_mean = full_train.exp().mean(0).mean(-1).unsqueeze(-1)
         self.dataset = TransformDataset(dataset, transform=get_transform_exp_mean(train_mean))
