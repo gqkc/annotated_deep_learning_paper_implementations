@@ -47,9 +47,9 @@ class Configs(BaseConfigs):
     diffusion: DenoiseDiffusion
 
     # Number of channels in the image. $3$ for RGB.
-    image_channels: int = 32
+    image_channels: int
     # Image size
-    image_size: int = 8
+    image_size: int
     # Number of channels in the initial feature map
     n_channels: int = 64
     # The list of channel numbers at each resolution.
@@ -102,6 +102,8 @@ class Configs(BaseConfigs):
         dataset = torch.load(args.train_dataset_path, map_location="cpu")
         full_train = next(iter(DataLoader(dataset, batch_size=len(dataset))))[0]
         train_mean = full_train.exp().mean(0).mean(-1).unsqueeze(-1)
+        self.image_size, self.image_channels = full_train.size(1), full_train.size(-1)
+
         self.dataset = TransformDataset(dataset, transform=get_transform_exp_mean(train_mean))
 
         # Create dataloader
