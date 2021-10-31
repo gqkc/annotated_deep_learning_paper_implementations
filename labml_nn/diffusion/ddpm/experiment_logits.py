@@ -99,7 +99,11 @@ class Configs(BaseConfigs):
 
         self.vqvae_model = torch.load(args.vq_path, map_location=self.device)
         self.train_dataset_path = args.train_dataset_path
-        self.dataset == torch.load(args.train_dataset_path, map_location=self.device)
+        dataset = torch.load(args.train_dataset_path, map_location=self.device)
+        full_train = next(iter(DataLoader(dataset, batch_size=len(dataset))))[0]
+        train_mean = full_train.exp().mean(0).mean(-1).unsqueeze(-1)
+        self.dataset = TransformDataset(dataset, transform=get_transform_exp_mean(train_mean))
+
         # Create dataloader
         self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True, pin_memory=True,
                                                        drop_last=True)
@@ -191,17 +195,17 @@ class Exp(object):
         return sample.exp()
 
 
-class PermuteDetach(object):
+class Permute(object):
     def __call__(self, sample):
-        return sample.detach().permute(2, 0, 1)
+        return sample.permute(2, 0, 1)
 
 
 def get_transform_exp_mean(mean):
     class Mean(object):
         def __call__(self, sample):
-            return (sample - mean)
+            return (sample - mean).detach()
 
-    return torchvision.transforms.Compose([Exp(), Mean(), PermuteDetach()])
+    return torchvision.transforms.Compose([Exp(), Mean(), Permute()])
 
 
 @option(Configs.dataset, 'latent')
