@@ -81,6 +81,20 @@ class Configs(BaseConfigs):
     train_dataset_path: str
 
     def init(self):
+
+        self.vqvae_model = torch.load(args.vq_path, map_location=self.device)
+        self.train_dataset_path = args.train_dataset_path
+        dataset = torch.load(args.train_dataset_path, map_location="cpu")
+        full_train = next(iter(DataLoader(dataset, batch_size=len(dataset))))[0]
+        train_mean = full_train.exp().mean(0).mean(-1).unsqueeze(-1)
+        self.image_size, self.image_channels = full_train.size(1), full_train.size(-1)
+
+        self.dataset = TransformDataset(dataset, transform=get_transform_exp_mean(train_mean))
+
+        # Create dataloader
+        self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True, pin_memory=True,
+                                                       drop_last=True)
+        
         # Create $\textcolor{cyan}{\epsilon_\theta}(x_t, t)$ model
         self.eps_model = UNet(
             image_channels=self.image_channels,
@@ -97,18 +111,7 @@ class Configs(BaseConfigs):
             device=self.device,
         )
 
-        self.vqvae_model = torch.load(args.vq_path, map_location=self.device)
-        self.train_dataset_path = args.train_dataset_path
-        dataset = torch.load(args.train_dataset_path, map_location="cpu")
-        full_train = next(iter(DataLoader(dataset, batch_size=len(dataset))))[0]
-        train_mean = full_train.exp().mean(0).mean(-1).unsqueeze(-1)
-        self.image_size, self.image_channels = full_train.size(1), full_train.size(-1)
 
-        self.dataset = TransformDataset(dataset, transform=get_transform_exp_mean(train_mean))
-
-        # Create dataloader
-        self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True, pin_memory=True,
-                                                       drop_last=True)
         # Create optimizer
         self.optimizer = torch.optim.Adam(self.eps_model.parameters(), lr=self.learning_rate)
 
