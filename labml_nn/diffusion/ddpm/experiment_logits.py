@@ -113,14 +113,15 @@ class Configs(BaseConfigs):
         # Image logging
         tracker.set_image("sample", True)
 
-    def sample(self):
+    def sample(self, x=None):
         """
         ### Sample images
         """
         with torch.no_grad():
             # $x_T \sim p(x_T) = \mathcal{N}(x_T; \mathbf{0}, \mathbf{I})$
-            x = torch.randn([self.n_samples, self.image_channels, self.image_size, self.image_size],
-                            device=self.device)
+            if x is None:
+                x = torch.randn([self.n_samples, self.image_channels, self.image_size, self.image_size],
+                                device=self.device)
 
             # Remove noise for $T$ steps
             for t_ in monit.iterate('Sample', self.n_steps):
@@ -134,6 +135,22 @@ class Configs(BaseConfigs):
             samples = self.vqvae_model.decode(samples_code)
             tracker.save('sample', samples)
             wandb.log({"sample": [wandb.Image(sample) for sample in samples]})
+            return x, samples_code, samples
+
+    def reconstruct(self):
+        with torch.no_grad():
+            number_of_rec = min(self.n_samples, self.data_loader.batch_size)
+            originals = next(iter(self.data_loader))[:number_of_rec]
+            t = torch.ones((originals.size(0),), device=originals.device, dtype=torch.long) * self.n_steps - 1
+            xT = self.diffusion.q_sample(x0=originals, t=t)
+            x0_tilde, _, reconstructions = self.sample(x=xT)
+            ce = torch.square(originals - x0_tilde).mean()
+            max_values = (x0_tilde.gather(1, originals.argmax(1).unsqueeze(1)) > x0_tilde)
+            rank = max_values.sum(dim=1).float().mean()
+            wandb.log({"rank": rank,
+                       "ce": ce,
+                       "reconstructions": [wandb.Image(image) for image in reconstructions],
+                       "images": [wandb.Image(image) for image in self.vqvae_model.decode(originals.argmax(1))]})
 
     def train(self):
         """
@@ -168,6 +185,8 @@ class Configs(BaseConfigs):
             self.train()
             # Sample some images
             self.sample()
+            # Reconstructions
+            self.reconstruct()
             # New line in the console
             tracker.new_line()
             # Save the model
