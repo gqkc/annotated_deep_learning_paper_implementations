@@ -156,4 +156,4 @@ class DenoiseDiffusionKL(DenoiseDiffusion):
         loss = torch.where(t == 0, decoder_nll_mean, kl_mean)
 
         # KL loss
-        return loss.sum()
+        return loss.mean()
