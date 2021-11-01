@@ -92,7 +92,9 @@ class Configs(BaseConfigs):
 
         self.n_steps = args.n_steps
 
-        self.dataset = TransformDataset(dataset, transform=get_transform_exp_mean(train_mean))
+        transforms = {"oh": get_transform_oh(), "exp": get_transform_exp_mean(train_mean)}
+
+        self.dataset = TransformDataset(dataset, transform=transforms[args.transform])
 
         # Create dataloader
         self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True, pin_memory=True,
@@ -226,6 +228,15 @@ class Permute(object):
         return sample.permute(2, 0, 1)
 
 
+def get_transform_oh():
+    class Oh(object):
+        def __call__(self, sample):
+            one_hot = torch.nn.functional.one_hot(sample.argmax(-1), sample.size(-1))
+            return one_hot * 0.5
+
+    return torchvision.transforms.Compose([Oh(), Permute()])
+
+
 def get_transform_exp_mean(mean):
     class Mean(object):
         def __call__(self, sample):
@@ -288,6 +299,7 @@ if __name__ == '__main__':
     parser.add_argument('--train_dataset_path', type=str)
     parser.add_argument('--kl', type=bool, default=False)
     parser.add_argument('--n_steps', type=int, default=200)
+    parser.add_argument('--transform', type=str, default="exp")
 
     global args
     args = parser.parse_args()
