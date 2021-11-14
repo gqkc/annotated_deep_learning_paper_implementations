@@ -121,7 +121,7 @@ class Configs(BaseConfigs):
         self.optimizer = torch.optim.Adam(self.eps_model.parameters(), lr=self.learning_rate)
 
         # Image logging
-        tracker.set_image("sample", True)
+        #tracker.set_image("sample", True)
 
     def sample(self, x=None):
         """
@@ -143,7 +143,7 @@ class Configs(BaseConfigs):
             # Log samples
             samples_code = x.argmax(1).to(x.device)
             samples = self.vqvae_model.decode(samples_code)
-            tracker.save('sample', samples)
+            #tracker.save('sample', samples)
             wandb.log({"sample": [wandb.Image(sample) for sample in samples]})
             return x, samples_code, samples
 
@@ -170,7 +170,7 @@ class Configs(BaseConfigs):
         # Iterate through the dataset
         for data in monit.iterate('Train', self.data_loader):
             # Increment global step
-            tracker.add_global_step()
+            #tracker.add_global_step()
             # Move data to device
             data = data.to(self.device)
 
@@ -198,7 +198,7 @@ class Configs(BaseConfigs):
             # Reconstructions
             self.reconstruct()
             # New line in the console
-            tracker.new_line()
+            #tracker.new_line()
             # Save the model
             experiment.save_checkpoint()
 
