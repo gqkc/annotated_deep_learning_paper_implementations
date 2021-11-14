@@ -247,7 +247,11 @@ def get_transform_exp_mean(mean):
 
 
 def get_transform_exp():
-    return torchvision.transforms.Compose([Exp(), Permute()])
+    class Rescale(object):
+        def __call__(self, sample):
+            return (sample * 2 - 1).detach()
+
+    return torchvision.transforms.Compose([Exp(), Rescale(), Permute()])
 
 
 @option(Configs.dataset, 'latent')
