@@ -92,7 +92,8 @@ class Configs(BaseConfigs):
 
         self.n_steps = args.n_steps
 
-        transforms = {"oh": get_transform_oh(), "exp": get_transform_exp_mean(train_mean)}
+        transforms = {"oh": get_transform_oh(), "exp_mean": get_transform_exp_mean(train_mean),
+                      "exp": get_transform_exp()}
 
         self.dataset = TransformDataset(dataset, transform=transforms[args.transform])
 
@@ -243,6 +244,10 @@ def get_transform_exp_mean(mean):
             return (sample - mean).detach()
 
     return torchvision.transforms.Compose([Exp(), Mean(), Permute()])
+
+
+def get_transform_exp():
+    return torchvision.transforms.Compose([Exp(), Permute()])
 
 
 @option(Configs.dataset, 'latent')
