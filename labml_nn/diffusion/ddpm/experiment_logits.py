@@ -154,11 +154,11 @@ class Configs(BaseConfigs):
             t = torch.ones((originals.size(0),), device=originals.device, dtype=torch.long) * self.n_steps - 1
             xT = self.diffusion.q_sample(x0=originals, t=t)
             x0_tilde, _, reconstructions = self.sample(x=xT)
-            ce = torch.square(originals - x0_tilde).mean()
-            max_values = (x0_tilde.gather(1, originals.argmax(1).unsqueeze(1)) > x0_tilde)
+            l2 = torch.square(originals - x0_tilde).mean()
+            max_values = (x0_tilde.gather(1, originals.argmax(1).unsqueeze(1)) < x0_tilde)
             rank = max_values.sum(dim=1).float().mean()
             wandb.log({"rank": rank,
-                       "ce": ce,
+                       "l2": l2,
                        "reconstructions": [wandb.Image(image) for image in reconstructions],
                        "images": [wandb.Image(image) for image in self.vqvae_model.decode(originals.argmax(1))]})
 
@@ -192,7 +192,7 @@ class Configs(BaseConfigs):
         """
         for _ in monit.loop(self.epochs):
             # Train the model
-            self.train()
+            # self.train()
             # Sample some images
             self.sample()
             # Reconstructions
