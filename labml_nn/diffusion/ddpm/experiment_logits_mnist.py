@@ -129,11 +129,10 @@ class Configs(BaseConfigs):
                 x = self.diffusion.p_sample(x, x.new_full((self.n_samples,), t, dtype=torch.long))
 
             # Log samples
-            samples_code = x.argmax(1).to(x.device)
-            samples = self.vqvae_model.decode(samples_code)
             # tracker.save('sample', samples)
-            wandb.log({"sample": [wandb.Image(sample) for sample in samples]})
-            return x, samples_code, samples
+            wandb.log({"sample": [wandb.Image(sample) for sample in x]})
+
+            return x
 
     def reconstruct(self):
         with torch.no_grad():
@@ -141,14 +140,12 @@ class Configs(BaseConfigs):
             originals = next(iter(self.data_loader))[:number_of_rec].to(self.device)
             t = torch.ones((originals.size(0),), device=originals.device, dtype=torch.long) * self.n_steps - 1
             xT = self.diffusion.q_sample(x0=originals, t=t)
-            x0_tilde, _, reconstructions = self.sample(x=xT)
-            l2 = torch.square(originals - x0_tilde).mean()
-            max_values = (x0_tilde.gather(1, originals.argmax(1).unsqueeze(1)) < x0_tilde)
-            rank = max_values.sum(dim=1).float().mean()
-            wandb.log({"rank": rank,
-                       "l2": l2,
-                       "reconstructions": [wandb.Image(image) for image in reconstructions],
-                       "images": [wandb.Image(image) for image in self.vqvae_model.decode(originals.argmax(1))]})
+            reconstructions = self.sample(x=xT)
+            l2 = torch.square(originals - reconstructions).mean()
+            wandb.log({
+                "l2": l2,
+                "reconstructions": [wandb.Image(image) for image in reconstructions],
+                "images": [wandb.Image(image) for image in originals]})
 
     def train(self):
         """
