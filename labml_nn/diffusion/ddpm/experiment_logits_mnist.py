@@ -30,6 +30,7 @@ from torch.utils.data import DataLoader
 from labml_nn.diffusion.ddpm import DenoiseDiffusion
 from labml_nn.diffusion.ddpm.ddpm_kl import DenoiseDiffusionKL
 from labml_nn.diffusion.ddpm.unet import UNet
+from labml import lab, experiment, monit
 
 
 class Configs(BaseConfigs):
@@ -47,9 +48,9 @@ class Configs(BaseConfigs):
     diffusion: DenoiseDiffusion
 
     # Number of channels in the image. $3$ for RGB.
-    image_channels: int
+    image_channels: int = 1
     # Image size
-    image_size: int
+    image_size: int = 28
     # Number of channels in the initial feature map
     n_channels: int = 64
     # The list of channel numbers at each resolution.
@@ -82,20 +83,7 @@ class Configs(BaseConfigs):
 
     def init(self):
 
-        self.vqvae_model = torch.load(args.vq_path, map_location=self.device)
-        self.vqvae_model.eval()
-        self.train_dataset_path = args.train_dataset_path
-        dataset = torch.load(args.train_dataset_path, map_location="cpu")
-        full_train = next(iter(DataLoader(dataset, batch_size=len(dataset))))[0]
-        train_mean = full_train.exp().mean(0).mean(-1).unsqueeze(-1)
-        self.image_size, self.image_channels = full_train.size(1), full_train.size(-1)
-
         self.n_steps = args.n_steps
-
-        transforms = {"oh": get_transform_oh(), "exp_mean": get_transform_exp_mean(train_mean),
-                      "exp": get_transform_exp()}
-
-        self.dataset = TransformDataset(dataset, transform=transforms[args.transform])
 
         # Create dataloader
         self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True, pin_memory=True,
@@ -121,7 +109,7 @@ class Configs(BaseConfigs):
         self.optimizer = torch.optim.Adam(self.eps_model.parameters(), lr=self.learning_rate)
 
         # Image logging
-        #tracker.set_image("sample", True)
+        # tracker.set_image("sample", True)
 
     def sample(self, x=None):
         """
@@ -143,7 +131,7 @@ class Configs(BaseConfigs):
             # Log samples
             samples_code = x.argmax(1).to(x.device)
             samples = self.vqvae_model.decode(samples_code)
-            #tracker.save('sample', samples)
+            # tracker.save('sample', samples)
             wandb.log({"sample": [wandb.Image(sample) for sample in samples]})
             return x, samples_code, samples
 
@@ -170,7 +158,7 @@ class Configs(BaseConfigs):
         # Iterate through the dataset
         for data in monit.iterate('Train', self.data_loader):
             # Increment global step
-            #tracker.add_global_step()
+            # tracker.add_global_step()
             # Move data to device
             data = data.to(self.device)
 
@@ -198,7 +186,7 @@ class Configs(BaseConfigs):
             # Reconstructions
             self.reconstruct()
             # New line in the console
-            #tracker.new_line()
+            # tracker.new_line()
             # Save the model
             experiment.save_checkpoint()
 
@@ -218,19 +206,23 @@ class TransformDataset(torch.utils.data.Dataset):
     def __len__(self):
         return self.dataset.__len__()
 
+
 class Exp(object):
     def __call__(self, sample):
         return sample.exp()
 
+
 class Permute(object):
     def __call__(self, sample):
         return sample.permute(2, 0, 1)
+
 
 def get_transform_oh():
     class Oh(object):
         def __call__(self, sample):
             one_hot = torch.nn.functional.one_hot(sample.argmax(-1), sample.size(-1))
             return one_hot * 0.5
+
     return torchvision.transforms.Compose([Oh(), Permute()])
 
 
@@ -238,6 +230,7 @@ def get_transform_exp_mean(mean):
     class Mean(object):
         def __call__(self, sample):
             return (sample - mean).detach()
+
     return torchvision.transforms.Compose([Exp(), Mean(), Permute()])
 
 
@@ -245,6 +238,7 @@ def get_transform_exp():
     class Rescale(object):
         def __call__(self, sample):
             return (sample * 2 - 1).detach()
+
     return torchvision.transforms.Compose([Exp(), Rescale(), Permute()])
 
 
@@ -277,6 +271,31 @@ def main():
     with experiment.start():
         configs.run()
     run.finish()
+
+
+class MNISTDataset(torchvision.datasets.MNIST):
+    """
+    ### MNIST dataset
+    """
+
+    def __init__(self, image_size):
+        transform = torchvision.transforms.Compose([
+            torchvision.transforms.Resize(image_size),
+            torchvision.transforms.ToTensor(),
+        ])
+
+        super().__init__(str(lab.get_data_path()), train=True, download=True, transform=transform)
+
+    def __getitem__(self, item):
+        return super().__getitem__(item)[0]
+
+
+@option(Configs.dataset, 'MNIST')
+def mnist_dataset(c: Configs):
+    """
+    Create MNIST dataset
+    """
+    return MNISTDataset(c.image_size)
 
 
 #
