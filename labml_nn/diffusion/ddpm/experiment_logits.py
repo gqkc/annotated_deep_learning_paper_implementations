@@ -249,7 +249,7 @@ def get_transform_exp_mean(mean):
 def get_transform_exp():
     class Rescale(object):
         def __call__(self, sample):
-            return (sample * 2 - 1).detach()
+            return (sample).detach()
 
     return torchvision.transforms.Compose([Exp(), Rescale(), Permute()])
 
