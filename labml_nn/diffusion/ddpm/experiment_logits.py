@@ -56,7 +56,7 @@ class Configs(BaseConfigs):
     # The number of channels is `channel_multipliers[i] * n_channels`
     channel_multipliers: List[int] = [1, 2]
     # The list of booleans that indicate whether to use attention at each resolution
-    is_attention: List[int] = [False,  True]
+    is_attention: List[int] = [False, True]
 
     # Number of time steps $T$
     n_steps: int
@@ -93,7 +93,7 @@ class Configs(BaseConfigs):
         self.n_steps = args.n_steps
 
         transforms = {"oh": get_transform_oh(), "exp_mean": get_transform_exp_mean(train_mean),
-                      "exp": get_transform_exp()}
+                      "exp": get_transform_exp(), "l2": get_transform_l2()}
 
         self.dataset = TransformDataset(dataset, transform=transforms[args.transform])
 
@@ -254,6 +254,14 @@ def get_transform_exp():
     return torchvision.transforms.Compose([Exp(), Rescale(), Permute()])
 
 
+def get_transform_l2():
+    class L2(object):
+        def __call__(self, sample):
+            return torch.nn.functional.normalize(sample, dim=-1)
+
+    return torchvision.transforms.Compose([L2(), Permute()])
+
+
 def main():
     # Create experiment
     experiment.create(name='diffuse')
@@ -294,7 +302,7 @@ if __name__ == '__main__':
     parser.add_argument('--train_dataset_path', type=str)
     parser.add_argument('--kl', type=bool, default=False)
     parser.add_argument('--n_steps', type=int, default=200)
-    parser.add_argument('--transform', type=str, default="exp")
+    parser.add_argument('--transform', type=str, default="l2")
 
     global args
     args = parser.parse_args()
