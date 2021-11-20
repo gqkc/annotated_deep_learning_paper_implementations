@@ -80,22 +80,31 @@ class Configs(BaseConfigs):
 
     train_dataset_path: str
 
-    def init(self):
+    def vq_load(self, path):
+        vqvae_model = torch.load(path, map_location=self.device)
+        vqvae_model.eval()
+        return vqvae_model
 
-        self.vqvae_model = torch.load(args.vq_path, map_location=self.device)
-        self.vqvae_model.eval()
-        self.train_dataset_path = args.train_dataset_path
-        dataset = torch.load(args.train_dataset_path, map_location="cpu")
+    def vq_decode(self, codes):
+        self.vqvae_model.decode(codes.argmax(1))
+
+    def load_dataset(self, path):
+        return torch.load(path, map_location="cpu")
+
+    def init(self, **kwargs):
+        self.vqvae_model = self.vq_load(kwargs["vq_path"])
+        self.train_dataset_path = kwargs["train_dataset_path"]
+        dataset = self.load_dataset(self.train_dataset_path)
         full_train = next(iter(DataLoader(dataset, batch_size=len(dataset))))[0]
         train_mean = full_train.exp().mean(0).mean(-1).unsqueeze(-1)
         self.image_size, self.image_channels = full_train.size(1), full_train.size(-1)
 
-        self.n_steps = args.n_steps
+        self.n_steps = kwargs["n_steps"]
 
         transforms = {"oh": get_transform_oh(), "exp_mean": get_transform_exp_mean(train_mean),
                       "exp": get_transform_exp(), "l2": get_transform_l2()}
 
-        self.dataset = TransformDataset(dataset, transform=transforms[args.transform])
+        self.dataset = TransformDataset(dataset, transform=transforms[kwargs["transform"]])
 
         # Create dataloader
         self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True, pin_memory=True,
@@ -109,7 +118,7 @@ class Configs(BaseConfigs):
             is_attn=self.is_attention,
         ).to(self.device)
 
-        ddpm_class = DenoiseDiffusion if not args.kl else DenoiseDiffusionKL
+        ddpm_class = DenoiseDiffusion if not kwargs["kl"] else DenoiseDiffusionKL
         # Create [DDPM class](index.html)
         self.diffusion = ddpm_class(
             eps_model=self.eps_model,
@@ -141,11 +150,10 @@ class Configs(BaseConfigs):
                 x = self.diffusion.p_sample(x, x.new_full((self.n_samples,), t, dtype=torch.long))
 
             # Log samples
-            samples_code = x.argmax(1).to(x.device)
-            samples = self.vqvae_model.decode(samples_code)
+            samples = self.vq_decode(x.to(self.device))
             # tracker.save('sample', samples)
             wandb.log({"sample": [wandb.Image(sample) for sample in samples]})
-            return x, samples_code, samples
+            return x, x.argmax(1), samples
 
     def reconstruct(self):
         with torch.no_grad():
@@ -160,7 +168,7 @@ class Configs(BaseConfigs):
             wandb.log({"rank": rank,
                        "l2": l2,
                        "reconstructions": [wandb.Image(image) for image in reconstructions],
-                       "images": [wandb.Image(image) for image in self.vqvae_model.decode(originals.argmax(1))]})
+                       "images": [wandb.Image(image) for image in self.vq_decode(originals)]})
 
     def train(self):
         """
@@ -192,7 +200,7 @@ class Configs(BaseConfigs):
         """
         for _ in monit.loop(self.epochs):
             # Train the model
-            self.train()
+            #self.train()
             # Sample some images
             self.sample()
             # Reconstructions
@@ -262,7 +270,7 @@ def get_transform_l2():
     return torchvision.transforms.Compose([L2(), Permute()])
 
 
-def main():
+def main(**kwargs):
     # Create experiment
     experiment.create(name='diffuse')
 
@@ -274,7 +282,7 @@ def main():
     })
 
     # Initialize
-    configs.init()
+    configs.init(**kwargs)
 
     # Set models for saving and loading
     experiment.add_pytorch_models({'eps_model': configs.eps_model})
@@ -304,6 +312,5 @@ if __name__ == '__main__':
     parser.add_argument('--n_steps', type=int, default=200)
     parser.add_argument('--transform', type=str, default="l2")
 
-    global args
     args = parser.parse_args()
-    main()
+    main(**vars(args))
