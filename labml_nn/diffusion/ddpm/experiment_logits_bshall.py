@@ -25,7 +25,7 @@ class BShallConfigs(Configs):
         return dataset
 
     def vq_decode(self, logits: torch.Tensor) -> torch.Tensor:
-        logits = logits.permute(0, 2, 3, 1).unsqueeze(0).contiguous()
+        logits = logits.permute(0, 2, 3, 1).unsqueeze(0).contiguous().to(self.device)
         dist = self.vqvae_model.decode(logits)
         return dist.probs.argmax(-1).float()
 
