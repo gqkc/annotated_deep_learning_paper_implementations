@@ -14,7 +14,7 @@ class BShallConfigs(Configs):
         vqvae_model = VQVAE(channels=256,
                             latent_dim=1,
                             num_embeddings=1024,
-                            embedding_dim=32)
+                            embedding_dim=32).to(self.device)
         vqvae_model.load_state_dict(torch.load(path, map_location=self.device)["model"])
         vqvae_model.eval()
         return vqvae_model
