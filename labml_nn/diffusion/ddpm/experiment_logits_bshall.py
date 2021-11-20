@@ -4,7 +4,7 @@ import torch
 import wandb
 from labml import experiment
 from datetime import datetime
-from vqvae.model import VQVAE
+from labml_nn.diffusion.ddpm.vqvae import VQVAE
 from torch.utils.data import TensorDataset, DataLoader
 
 
