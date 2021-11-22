@@ -40,6 +40,7 @@ if __name__ == '__main__':
     parser.add_argument('--kl', type=bool, default=False)
     parser.add_argument('--n_steps', type=int, default=200)
     parser.add_argument('--transform', type=str, default="l2")
+    parser.add_argument("--uuid", default=None, help="uuid for the checkpoint")
 
     global args
     args = parser.parse_args()
