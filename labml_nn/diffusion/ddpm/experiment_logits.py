@@ -55,9 +55,9 @@ class Configs(BaseConfigs):
     n_channels: int = 128
     # The list of channel numbers at each resolution.
     # The number of channels is `channel_multipliers[i] * n_channels`
-    channel_multipliers: List[int] = [1, 2]
+    channel_multipliers: List[int]
     # The list of booleans that indicate whether to use attention at each resolution
-    is_attention: List[int] = [False, True]
+    is_attention: List[int]
 
     # Number of time steps $T$
     n_steps: int
@@ -113,7 +113,9 @@ class Configs(BaseConfigs):
         # Create dataloader
         self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True, pin_memory=True,
                                                        drop_last=True)
-
+        self.channel_multipliers = kwargs["channel_multipliers"]
+        self.is_attention = [False] * len(self.channel_multipliers)
+        self.is_attention[-1] = True
         # Create $\textcolor{cyan}{\epsilon_\theta}(x_t, t)$ model
         self.eps_model = UNet(
             image_channels=self.image_channels,
@@ -331,6 +333,7 @@ if __name__ == '__main__':
                         help="exponential moving average to update the codebook vectors")
     parser.add_argument("--channels", default=1, help="similarity for vq vae")
     parser.add_argument("--uuid", default=None, help="uuid for the checkpoint")
+    parser.add_argument("--channel_multipliers", default=[1, 2], nargs='+', type=int, help="channel multipliers")
 
     args = parser.parse_args()
     main(config=Configs(), name_exp="diffusion_logits", **vars(args))

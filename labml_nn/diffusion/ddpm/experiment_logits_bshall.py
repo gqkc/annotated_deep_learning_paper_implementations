@@ -1,11 +1,8 @@
-from labml_nn.diffusion.ddpm.experiment_logits import Configs, main
 import torch
+from torch.utils.data import TensorDataset
 
-import wandb
-from labml import experiment
-from datetime import datetime
+from labml_nn.diffusion.ddpm.experiment_logits import Configs, main
 from labml_nn.diffusion.ddpm.vqvae import VQVAE
-from torch.utils.data import TensorDataset, DataLoader
 
 
 class BShallConfigs(Configs):
@@ -41,6 +38,7 @@ if __name__ == '__main__':
     parser.add_argument('--n_steps', type=int, default=200)
     parser.add_argument('--transform', type=str, default="l2")
     parser.add_argument("--uuid", default=None, help="uuid for the checkpoint")
+    parser.add_argument("--channel_multipliers", default=[1, 2], nargs='+', type=int, help="channel multipliers")
 
     global args
     args = parser.parse_args()
