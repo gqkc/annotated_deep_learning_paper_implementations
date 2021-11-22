@@ -90,7 +90,7 @@ class Configs(BaseConfigs):
         return vqvae_model
 
     def vq_decode(self, codes):
-        self.vqvae_model.decode(codes.argmax(1))
+        return self.vqvae_model.decode(codes.argmax(1))
 
     def load_dataset(self, path):
         return torch.load(path, map_location="cpu")
@@ -204,7 +204,7 @@ class Configs(BaseConfigs):
         """
         for _ in monit.loop(self.epochs):
             # Train the model
-            self.train()
+            #self.train()
             # Sample some images
             self.sample()
             # Reconstructions
