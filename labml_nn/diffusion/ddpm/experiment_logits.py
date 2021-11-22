@@ -129,6 +129,7 @@ class Configs(BaseConfigs):
             n_steps=self.n_steps,
             device=self.device,
         )
+        self.diffusion
 
         # Create optimizer
         self.optimizer = torch.optim.Adam(self.eps_model.parameters(), lr=self.learning_rate)
@@ -212,7 +213,7 @@ class Configs(BaseConfigs):
             # New line in the console
             # tracker.new_line()
             # Save the model
-            experiment.save_checkpoint()
+            # experiment.save_checkpoint()
 
 
 class TransformDataset(torch.utils.data.Dataset):
@@ -276,17 +277,21 @@ def get_transform_l2():
 
 def main(**kwargs):
     # Create experiment
-    experiment.create(name='diffuse')
+    experiment.create(name=kwargs["name_exp"])
 
     # Create configurations
-    configs = Configs()
-
+    configs = kwargs["config"]
+    configs_dict = {}
+    if kwargs["uuid"] is not None:
+        configs_dict = experiment.load_configs(kwargs["uuid"])
     # Set configurations. You can override the defaults by passing the values in the dictionary.
-    experiment.configs(configs, {
-    })
+    experiment.configs(configs, configs_dict)
 
     # Initialize
     configs.init(**kwargs)
+
+    # Load training experiment
+    experiment.load(kwargs["uuid"])
 
     # Set models for saving and loading
     experiment.add_pytorch_models({'eps_model': configs.eps_model})
@@ -294,7 +299,7 @@ def main(**kwargs):
     run_name = datetime.now().strftime("train-%Y-%m-%d-%H-%M")
 
     run = wandb.init(
-        project="diffusion_logits",
+        project=kwargs["name_exp"],
         entity='cmap_vq',
         config=None,
         name=run_name,
@@ -325,6 +330,7 @@ if __name__ == '__main__':
     parser.add_argument('--ema', default=False, type=bool,
                         help="exponential moving average to update the codebook vectors")
     parser.add_argument("--channels", default=1, help="similarity for vq vae")
+    parser.add_argument("--uuid", default=None, help="uuid for the checkpoint")
 
     args = parser.parse_args()
-    main(**vars(args))
+    main(config=Configs(), name_exp="diffusion_logits", **vars(args))

@@ -1,4 +1,4 @@
-from labml_nn.diffusion.ddpm.experiment_logits import Configs
+from labml_nn.diffusion.ddpm.experiment_logits import Configs, main
 import torch
 
 import wandb
@@ -30,37 +30,6 @@ class BShallConfigs(Configs):
         return dist.probs.argmax(-1).float()
 
 
-def main(**kwargs):
-    # Create experiment
-    experiment.create(name='diffuse_logits_bshall')
-
-    # Create configurations
-    configs = BShallConfigs()
-
-    # Set configurations. You can override the defaults by passing the values in the dictionary.
-    experiment.configs(configs, {
-    })
-
-    # Initialize
-    configs.init(**kwargs)
-
-    # Set models for saving and loading
-    experiment.add_pytorch_models({'eps_model': configs.eps_model})
-
-    run_name = datetime.now().strftime("train-%Y-%m-%d-%H-%M")
-
-    run = wandb.init(
-        project="diffusion_logits_bshall",
-        entity='cmap_vq',
-        config=None,
-        name=run_name,
-    )
-    # Start and run the training loop
-    with experiment.start():
-        configs.run()
-    run.finish()
-
-
 #
 if __name__ == '__main__':
     import argparse
@@ -74,4 +43,4 @@ if __name__ == '__main__':
 
     global args
     args = parser.parse_args()
-    main(**vars(args))
+    main(config=BShallConfigs(), name_exp="diffuse_logits_bshall", **vars(args))
