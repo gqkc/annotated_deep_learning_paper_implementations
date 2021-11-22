@@ -30,6 +30,7 @@ from torch.utils.data import DataLoader
 from labml_nn.diffusion.ddpm import DenoiseDiffusion
 from labml_nn.diffusion.ddpm.ddpm_kl import DenoiseDiffusionKL
 from labml_nn.diffusion.ddpm.unet import UNet
+from mixturevqvae.models import VAE
 
 
 class Configs(BaseConfigs):
@@ -81,7 +82,10 @@ class Configs(BaseConfigs):
     train_dataset_path: str
 
     def vq_load(self, **kwargs):
-        vqvae_model = torch.load(kwargs["vq_path"], map_location=self.device)
+        vqvae_model = VAE.VQVAE_(kwargs["latent_dim"], kwargs["k"], kwargs["gumbel"], beta=1., alpha=1.,
+                                 archi=kwargs["archi"], data_type="continuous", ema=kwargs["ema"],
+                                 num_channels=kwargs["channels"], compare=kwargs["compare"])
+        vqvae_model.load_state_dict(torch.load(kwargs["vq_path"], map_location=self.device))
         vqvae_model.eval()
         return vqvae_model
 
@@ -311,6 +315,16 @@ if __name__ == '__main__':
     parser.add_argument('--kl', type=bool, default=False)
     parser.add_argument('--n_steps', type=int, default=200)
     parser.add_argument('--transform', type=str, default="l2")
+
+    parser.add_argument("--latent_dim", default=32, type=int)
+    parser.add_argument("--k", default=64, type=int)
+    parser.add_argument("--gumbel", default=True, type=bool)
+    parser.add_argument("--archi", default="convMnist",
+                        choices=['basic', 'convMnist', 'convCifar', 'ResNetMnist', "ResNet"])
+    parser.add_argument("--compare", default="l2", choices=['dot', 'cosine', 'l2'], help="similarity for vq vae")
+    parser.add_argument('--ema', default=False, type=bool,
+                        help="exponential moving average to update the codebook vectors")
+    parser.add_argument("--channels", default=1, help="similarity for vq vae")
 
     args = parser.parse_args()
     main(**vars(args))
