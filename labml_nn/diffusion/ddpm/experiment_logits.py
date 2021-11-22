@@ -80,8 +80,8 @@ class Configs(BaseConfigs):
 
     train_dataset_path: str
 
-    def vq_load(self, path):
-        vqvae_model = torch.load(path, map_location=self.device)
+    def vq_load(self, **kwargs):
+        vqvae_model = torch.load(kwargs["vq_path"], map_location=self.device)
         vqvae_model.eval()
         return vqvae_model
 
@@ -92,7 +92,7 @@ class Configs(BaseConfigs):
         return torch.load(path, map_location="cpu")
 
     def init(self, **kwargs):
-        self.vqvae_model = self.vq_load(kwargs["vq_path"])
+        self.vqvae_model = self.vq_load(**kwargs)
         self.train_dataset_path = kwargs["train_dataset_path"]
         dataset = self.load_dataset(self.train_dataset_path)
         full_train = next(iter(DataLoader(dataset, batch_size=len(dataset))))[0]
@@ -200,7 +200,7 @@ class Configs(BaseConfigs):
         """
         for _ in monit.loop(self.epochs):
             # Train the model
-            self.train()
+            #self.train()
             # Sample some images
             self.sample()
             # Reconstructions

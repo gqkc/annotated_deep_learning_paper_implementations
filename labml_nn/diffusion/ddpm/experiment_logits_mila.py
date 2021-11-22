@@ -6,36 +6,33 @@ from labml import experiment
 from datetime import datetime
 from labml_nn.diffusion.ddpm.vqvae import VQVAE
 from torch.utils.data import TensorDataset, DataLoader
+from pytorch_vqvae.modules import VectorQuantizedVAE
 
 
-class BShallConfigs(Configs):
+class MilaConfigs(Configs):
 
     def vq_load(self, **kwargs):
-        vqvae_model = VQVAE(channels=256,
-                            latent_dim=1,
-                            num_embeddings=1024,
-                            embedding_dim=32).to(self.device)
-        vqvae_model.load_state_dict(torch.load(kwargs["vq_path"], map_location=self.device)["model"])
+        vqvae_model = VectorQuantizedVAE(kwargs["num_channels"], kwargs["hidden_size"], kwargs["k"]).to(self.device)
+        vqvae_model.load_state_dict(torch.load(kwargs["vq_path"], map_location=self.device))
         vqvae_model.eval()
         return vqvae_model
 
     def load_dataset(self, path: str) -> torch.utils.data.Dataset:
-        data = torch.load(path, map_location="cpu")
-        dataset = TensorDataset(data, torch.zeros(data.size(0)))
+        dataset = torch.load(path, map_location="cpu")
         return dataset
 
     def vq_decode(self, logits: torch.Tensor) -> torch.Tensor:
-        logits = logits.permute(0, 2, 3, 1).unsqueeze(0).contiguous().to(self.device)
-        dist = self.vqvae_model.decode(logits)
-        return dist.probs.argmax(-1).float()
+        latents = logits.argmin(1)
+        reconstructions = self.vqvae_model.decode(latents)
+        return reconstructions
 
 
 def main(**kwargs):
     # Create experiment
-    experiment.create(name='diffuse_logits_bshall')
+    experiment.create(name='diffuse_logits_mila')
 
     # Create configurations
-    configs = BShallConfigs()
+    configs = MilaConfigs()
 
     # Set configurations. You can override the defaults by passing the values in the dictionary.
     experiment.configs(configs, {
@@ -50,7 +47,7 @@ def main(**kwargs):
     run_name = datetime.now().strftime("train-%Y-%m-%d-%H-%M")
 
     run = wandb.init(
-        project="diffusion_logits_bshall",
+        project="diffusion_logits_mila",
         entity='cmap_vq',
         config=None,
         name=run_name,
@@ -71,6 +68,9 @@ if __name__ == '__main__':
     parser.add_argument('--kl', type=bool, default=False)
     parser.add_argument('--n_steps', type=int, default=200)
     parser.add_argument('--transform', type=str, default="l2")
+    parser.add_argument('--k', type=int, default=512)
+    parser.add_argument('--hidden_size', type=int, default=64)
+    parser.add_argument('--num_channels', type=int, default=3)
 
     global args
     args = parser.parse_args()
