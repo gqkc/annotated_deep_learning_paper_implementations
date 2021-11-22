@@ -40,4 +40,4 @@ if __name__ == '__main__':
 
     global args
     args = parser.parse_args()
-    main(config=MilaConfigs(), name_exp="diffuse_logits_mila", **vars(args))
+    main(config=MilaConfigs(), name_exp="diffusion_logits_mila", **vars(args))

@@ -44,4 +44,4 @@ if __name__ == '__main__':
 
     global args
     args = parser.parse_args()
-    main(config=BShallConfigs(), name_exp="diffuse_logits_bshall", **vars(args))
+    main(config=BShallConfigs(), name_exp="diffusion_logits_bshall", **vars(args))
