@@ -215,7 +215,7 @@ class Configs(BaseConfigs):
             # New line in the console
             # tracker.new_line()
             # Save the model
-            # experiment.save_checkpoint()
+            experiment.save_checkpoint()
 
 
 class TransformDataset(torch.utils.data.Dataset):
