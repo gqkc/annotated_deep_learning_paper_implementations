@@ -349,6 +349,7 @@ def get_parser():
     parser.add_argument("--channel_multipliers", default=[1, 2], nargs='+', type=int, help="channel multipliers")
     parser.add_argument('--save_checkpoint', default=False, type=bool)
     parser.add_argument('--load_checkpoint', type=str, default=None)
+    parser.add_argument('--num_channels', type=int, default=1)
     return parser
 
 
