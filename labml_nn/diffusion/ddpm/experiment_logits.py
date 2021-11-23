@@ -328,6 +328,7 @@ def main(**kwargs):
 
 
 def get_parser():
+    import argparse
     parser = argparse.ArgumentParser(description='parser')
     parser.add_argument('--vq_path', type=str)
     parser.add_argument('--train_dataset_path', type=str)
@@ -352,8 +353,6 @@ def get_parser():
 
 
 if __name__ == '__main__':
-    import argparse
-
     parser = get_parser()
 
     args = parser.parse_args()
