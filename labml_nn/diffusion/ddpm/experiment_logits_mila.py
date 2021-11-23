@@ -2,7 +2,7 @@ import torch
 from pytorch_vqvae.modules import VectorQuantizedVAE
 from torch.utils.data import TensorDataset
 
-from labml_nn.diffusion.ddpm.experiment_logits import Configs, main
+from labml_nn.diffusion.ddpm.experiment_logits import Configs, main, parser
 
 
 class MilaConfigs(Configs):
@@ -23,23 +23,8 @@ class MilaConfigs(Configs):
         return reconstructions
 
 
-#
 if __name__ == '__main__':
-    import argparse
-
-    parser = argparse.ArgumentParser(description='parser')
-    parser.add_argument('--vq_path', type=str)
-    parser.add_argument('--train_dataset_path', type=str)
-    parser.add_argument('--kl', type=bool, default=False)
-    parser.add_argument('--n_steps', type=int, default=200)
-    parser.add_argument('--transform', type=str, default="l2")
-    parser.add_argument('--k', type=int, default=512)
-    parser.add_argument('--hidden_size', type=int, default=64)
-    parser.add_argument('--num_channels', type=int, default=3)
-    parser.add_argument("--uuid", default=None, help="uuid for the checkpoint")
-    parser.add_argument("--channel_multipliers", default=[1, 2], nargs='+', type=int, help="channel multipliers")
-    parser.add_argument("--channels", default=1, help="number of channels")
-
+    parser = get_parser()
     global args
     args = parser.parse_args()
     main(config=MilaConfigs(), name_exp="diffusion_logits_mila", **vars(args))
