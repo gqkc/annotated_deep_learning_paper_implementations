@@ -136,7 +136,7 @@ class Configs(BaseConfigs):
         ).to(self.device)
 
         if kwargs["load_checkpoint"] is not None:
-            self.eps_model.load_state_dict(torch.load(kwargs["load_checkpoint"]))
+            self.eps_model.load_state_dict(torch.load(kwargs["load_checkpoint"], map_location=self.device))
 
         ddpm_class = DenoiseDiffusion if not kwargs["kl"] else DenoiseDiffusionKL
         # Create [DDPM class](index.html)
