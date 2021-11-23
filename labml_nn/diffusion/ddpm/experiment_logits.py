@@ -67,7 +67,7 @@ class Configs(BaseConfigs):
     # Number of samples to generate
     n_samples: int = 16
     # Learning rate
-    learning_rate: float = 2e-5
+    learning_rate: float
 
     # Number of training epochs
     epochs: int = 1000
@@ -113,6 +113,7 @@ class Configs(BaseConfigs):
         full_train = next(iter(DataLoader(dataset, batch_size=len(dataset))))[0]
         train_mean = full_train.exp().mean(0).mean(-1).unsqueeze(-1)
         self.image_size, self.image_channels = full_train.size(1), full_train.size(-1)
+        self.learning_rate = kwargs["lr"]
 
         self.n_steps = kwargs["n_steps"]
 
@@ -350,6 +351,8 @@ def get_parser():
     parser.add_argument('--save_checkpoint', default=False, type=bool)
     parser.add_argument('--load_checkpoint', type=str, default=None)
     parser.add_argument('--num_channels', type=int, default=1)
+    parser.add_argument('--lr', type=float, default=2e-5)
+
     return parser
 
 
