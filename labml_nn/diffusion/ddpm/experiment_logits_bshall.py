@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import TensorDataset
 
-from labml_nn.diffusion.ddpm.experiment_logits import Configs, main, parser
+from labml_nn.diffusion.ddpm.experiment_logits import Configs, main, get_parser
 from labml_nn.diffusion.ddpm.vqvae import VQVAE
 
 

@@ -2,7 +2,7 @@ import torch
 from pytorch_vqvae.modules import VectorQuantizedVAE
 from torch.utils.data import TensorDataset
 
-from labml_nn.diffusion.ddpm.experiment_logits import Configs, main, parser
+from labml_nn.diffusion.ddpm.experiment_logits import Configs, main, get_parser
 
 
 class MilaConfigs(Configs):
