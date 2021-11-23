@@ -38,6 +38,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_channels', type=int, default=3)
     parser.add_argument("--uuid", default=None, help="uuid for the checkpoint")
     parser.add_argument("--channel_multipliers", default=[1, 2], nargs='+', type=int, help="channel multipliers")
+    parser.add_argument("--channels", default=1, help="number of channels")
 
     global args
     args = parser.parse_args()

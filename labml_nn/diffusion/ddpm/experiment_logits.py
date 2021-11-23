@@ -346,7 +346,7 @@ if __name__ == '__main__':
     parser.add_argument("--compare", default="l2", choices=['dot', 'cosine', 'l2'], help="similarity for vq vae")
     parser.add_argument('--ema', default=False, type=bool,
                         help="exponential moving average to update the codebook vectors")
-    parser.add_argument("--channels", default=1, help="similarity for vq vae")
+    parser.add_argument("--channels", default=1, help="number of channels")
     parser.add_argument("--uuid", default=None, help="uuid for the checkpoint")
     parser.add_argument("--channel_multipliers", default=[1, 2], nargs='+', type=int, help="channel multipliers")
     parser.add_argument('--save_checkpoint', default=False, type=bool)
