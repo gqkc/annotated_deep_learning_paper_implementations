@@ -31,6 +31,7 @@ from labml_nn.diffusion.ddpm import DenoiseDiffusion
 from labml_nn.diffusion.ddpm.ddpm_kl import DenoiseDiffusionKL
 from labml_nn.diffusion.ddpm.unet import UNet
 from mixturevqvae.models import VAE
+import os
 
 
 class Configs(BaseConfigs):
@@ -78,8 +79,12 @@ class Configs(BaseConfigs):
     vqvae_model: torch.nn.Module
     # Adam optimizer
     optimizer: torch.optim.Adam
-
+    # path to the train dataset
     train_dataset_path: str
+    # path where to save the eps model
+    eps_model_save_path: str
+    # whether to save checkpoints the labml way
+    save_checkpoint: bool
 
     def vq_load(self, **kwargs):
         vqvae_model = VAE.VQVAE_(kwargs["latent_dim"], kwargs["k"], kwargs["gumbel"], beta=1., alpha=1.,
@@ -96,6 +101,12 @@ class Configs(BaseConfigs):
         return torch.load(path, map_location="cpu")
 
     def init(self, **kwargs):
+        # to save eps_model
+        self.save_checkpoint = kwargs["save_checkpoint"]
+        path_to_model_save = os.path.join("output", kwargs["run_name"])
+        self.eps_model_save_path = os.path.join(path_to_model_save, "eps_model.pt")
+        os.makedirs(path_to_model_save)
+        # load the vqvae model from the given path
         self.vqvae_model = self.vq_load(**kwargs)
         self.train_dataset_path = kwargs["train_dataset_path"]
         dataset = self.load_dataset(self.train_dataset_path)
@@ -124,6 +135,9 @@ class Configs(BaseConfigs):
             is_attn=self.is_attention,
         ).to(self.device)
 
+        if kwargs["load_checkpoint"] is not None:
+            self.eps_model.load_state_dict(torch.load(kwargs["load_checkpoint"]))
+
         ddpm_class = DenoiseDiffusion if not kwargs["kl"] else DenoiseDiffusionKL
         # Create [DDPM class](index.html)
         self.diffusion = ddpm_class(
@@ -131,7 +145,6 @@ class Configs(BaseConfigs):
             n_steps=self.n_steps,
             device=self.device,
         )
-        self.diffusion
 
         # Create optimizer
         self.optimizer = torch.optim.Adam(self.eps_model.parameters(), lr=self.learning_rate)
@@ -215,7 +228,9 @@ class Configs(BaseConfigs):
             # New line in the console
             # tracker.new_line()
             # Save the model
-            experiment.save_checkpoint()
+            if self.save_checkpoint:
+                experiment.save_checkpoint()
+            torch.save(self.eps_model, self.eps_model_save_path)
 
 
 class TransformDataset(torch.utils.data.Dataset):
@@ -280,9 +295,11 @@ def get_transform_l2():
 def main(**kwargs):
     # Create experiment
     experiment.create(name=kwargs["name_exp"])
+    run_name = datetime.now().strftime("train-%Y-%m-%d-%H-%M")
 
     # Create configurations
     configs = kwargs["config"]
+    kwargs["run_name"] = run_name
     configs_dict = {}
     if kwargs["uuid"] is not None:
         configs_dict = experiment.load_configs(kwargs["uuid"])
@@ -297,8 +314,6 @@ def main(**kwargs):
 
     # Set models for saving and loading
     experiment.add_pytorch_models({'eps_model': configs.eps_model})
-
-    run_name = datetime.now().strftime("train-%Y-%m-%d-%H-%M")
 
     run = wandb.init(
         project=kwargs["name_exp"],
@@ -334,6 +349,8 @@ if __name__ == '__main__':
     parser.add_argument("--channels", default=1, help="similarity for vq vae")
     parser.add_argument("--uuid", default=None, help="uuid for the checkpoint")
     parser.add_argument("--channel_multipliers", default=[1, 2], nargs='+', type=int, help="channel multipliers")
+    parser.add_argument('--save_checkpoint', default=False, type=bool)
+    parser.add_argument('--load_checkpoint', type=str, default=None)
 
     args = parser.parse_args()
     main(config=Configs(), name_exp="diffusion_logits", **vars(args))
