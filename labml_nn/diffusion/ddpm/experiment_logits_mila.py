@@ -8,7 +8,7 @@ from labml_nn.diffusion.ddpm.experiment_logits import Configs, main, get_parser
 class MilaConfigs(Configs):
 
     def vq_load(self, **kwargs):
-        vqvae_model = VectorQuantizedVAE(kwargs["num_channels"], kwargs["hidden_size"], kwargs["k"]).to(self.device)
+        vqvae_model = VectorQuantizedVAE(kwargs["num_channels"], kwargs["latent_dim"], kwargs["k"]).to(self.device)
         vqvae_model.load_state_dict(torch.load(kwargs["vq_path"], map_location=self.device))
         vqvae_model.eval()
         return vqvae_model
