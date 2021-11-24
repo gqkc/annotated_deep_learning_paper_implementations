@@ -226,7 +226,7 @@ class Configs(BaseConfigs):
             # Sample some images
             self.sample()
             # Reconstructions
-            self.reconstruct()
+            #self.reconstruct()
             # New line in the console
             # tracker.new_line()
             # Save the model
