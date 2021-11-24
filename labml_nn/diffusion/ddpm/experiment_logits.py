@@ -119,7 +119,7 @@ class Configs(BaseConfigs):
 
         transforms = {"oh": get_transform_oh(), "exp_mean": get_transform_exp_mean(train_mean),
                       "exp": get_transform_exp(), "l2": get_transform_l2(), "mean_std": get_transform_mean_std(),
-                      "mean_max": get_transform_mean_max()}
+                      "mean_max": get_transform_mean_max(), "permute": Permute()}
 
         self.dataset = TransformDataset(dataset, transform=transforms[kwargs["transform"]])
 
@@ -134,7 +134,7 @@ class Configs(BaseConfigs):
             image_channels=self.image_channels,
             n_channels=self.n_channels,
             ch_mults=self.channel_multipliers,
-            is_attn=self.is_attention,
+            is_attn=self.is_attention, bn=kwargs["bn"]
         ).to(self.device)
 
         if kwargs["load_checkpoint"] is not None:
@@ -369,6 +369,7 @@ def get_parser():
     parser.add_argument('--load_checkpoint', type=str, default=None)
     parser.add_argument('--num_channels', type=int, default=1)
     parser.add_argument('--lr', type=float, default=2e-5)
+    parser.add_argument('--bn', type=bool, default=False)
 
     return parser
 

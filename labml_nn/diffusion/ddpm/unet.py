@@ -308,7 +308,7 @@ class UNet(Module):
     def __init__(self, image_channels: int = 3, n_channels: int = 64,
                  ch_mults: Union[Tuple[int, ...], List[int]] = (1, 2, 2, 4),
                  is_attn: Union[Tuple[bool, ...], List[int]] = (False, False, True, True),
-                 n_blocks: int = 2):
+                 n_blocks: int = 2, bn=False):
         """
         * `image_channels` is the number of channels in the image. $3$ for RGB.
         * `n_channels` is number of channels in the initial feature map that we transform the image into
@@ -374,13 +374,17 @@ class UNet(Module):
         self.norm = nn.GroupNorm(8, n_channels)
         self.act = Swish()
         self.final = nn.Conv2d(in_channels, image_channels, kernel_size=(3, 3), padding=(1, 1))
+        self.bn = bn
+        if bn:
+            self.initial_bn = nn.BatchNorm2d(image_channels)
 
     def forward(self, x: torch.Tensor, t: torch.Tensor):
         """
         * `x` has shape `[batch_size, in_channels, height, width]`
         * `t` has shape `[batch_size]`
         """
-
+        if self.bn:
+            x = self.initial_bn(x)
         # Get time-step embeddings
         t = self.time_emb(t)
 
