@@ -118,7 +118,7 @@ class Configs(BaseConfigs):
         self.n_steps = kwargs["n_steps"]
 
         transforms = {"oh": get_transform_oh(), "exp_mean": get_transform_exp_mean(train_mean),
-                      "exp": get_transform_exp(), "l2": get_transform_l2()}
+                      "exp": get_transform_exp(), "l2": get_transform_l2(), "mean_std": get_transform_mean_std()}
 
         self.dataset = TransformDataset(dataset, transform=transforms[kwargs["transform"]])
 
@@ -291,6 +291,14 @@ def get_transform_l2():
             return torch.nn.functional.normalize(sample, dim=-1)
 
     return torchvision.transforms.Compose([L2(), Permute()])
+
+
+def get_transform_mean_std():
+    class Mean_Std(object):
+        def __call__(self, sample):
+            return (sample - sample.mean(-1).unsqueeze(-1)) / sample.std(-1).unsqueeze(-1)
+
+    return torchvision.transforms.Compose([Mean_Std(), Permute()])
 
 
 def main(**kwargs):
