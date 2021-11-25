@@ -192,7 +192,8 @@ class Configs(BaseConfigs):
             wandb.log({"rank": rank,
                        "l2": l2,
                        "reconstructions": [wandb.Image(image) for image in reconstructions],
-                       "images": [wandb.Image(image) for image in self.vq_decode(originals)]})
+                       "images": [wandb.Image(image) for image in self.vq_decode(originals)],
+                       "xT_mean": xT.mean()})
 
     def train(self):
         """
