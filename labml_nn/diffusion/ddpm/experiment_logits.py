@@ -146,6 +146,8 @@ class Configs(BaseConfigs):
             eps_model=self.eps_model,
             n_steps=self.n_steps,
             device=self.device,
+            beta_start=kwargs["beta_start"],
+            beta_end=kwargs["beta_end"]
         )
 
         # Create optimizer
@@ -370,6 +372,8 @@ def get_parser():
     parser.add_argument('--num_channels', type=int, default=1)
     parser.add_argument('--lr', type=float, default=2e-5)
     parser.add_argument('--bn', type=bool, default=False)
+    parser.add_argument('--beta_start', type=float, default=0.0001)
+    parser.add_argument('--beta_end', type=float, default=0.02)
 
     return parser
 
