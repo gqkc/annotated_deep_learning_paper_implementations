@@ -313,6 +313,18 @@ def get_transform_mean_std():
     return torchvision.transforms.Compose([Mean_Std(), Permute()])
 
 
+def str2bool(v):
+    import argparse
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
 def main(**kwargs):
     # Create experiment
     experiment.create(name=kwargs["name_exp"])
@@ -355,7 +367,7 @@ def get_parser():
     parser.add_argument('--train_dataset_path', type=str)
     parser.add_argument('--kl', type=bool, default=False)
     parser.add_argument('--n_steps', type=int, default=1000)
-    parser.add_argument('--transform', type=str, default="permute")
+    parser.add_argument('--transform', type=str, default="l2")
 
     parser.add_argument("--latent_dim", default=32, type=int)
     parser.add_argument("--k", default=64, type=int)
@@ -372,7 +384,7 @@ def get_parser():
     parser.add_argument('--load_checkpoint', type=str, default=None)
     parser.add_argument('--num_channels', type=int, default=1)
     parser.add_argument('--lr', type=float, default=2e-5)
-    parser.add_argument('--bn', type=bool, default=True)
+    parser.add_argument('--bn', type=str2bool, default=False)
     parser.add_argument('--beta_start', type=float, default=0.0001)
     parser.add_argument('--beta_end', type=float, default=0.02)
 
