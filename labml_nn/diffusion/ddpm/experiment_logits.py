@@ -354,7 +354,7 @@ def get_parser():
     parser.add_argument('--vq_path', type=str)
     parser.add_argument('--train_dataset_path', type=str)
     parser.add_argument('--kl', type=bool, default=False)
-    parser.add_argument('--n_steps', type=int, default=200)
+    parser.add_argument('--n_steps', type=int, default=1000)
     parser.add_argument('--transform', type=str, default="permute")
 
     parser.add_argument("--latent_dim", default=32, type=int)
