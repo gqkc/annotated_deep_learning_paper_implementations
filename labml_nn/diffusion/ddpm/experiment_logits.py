@@ -32,6 +32,7 @@ from labml_nn.diffusion.ddpm.ddpm_kl import DenoiseDiffusionKL
 from labml_nn.diffusion.ddpm.unet import UNet
 from mixturevqvae.models import VAE
 import os
+from labml_nn.diffusion.ddpm.data_utils import TransformDataset, str2bool, transforms
 
 
 class Configs(BaseConfigs):
@@ -111,15 +112,10 @@ class Configs(BaseConfigs):
         self.train_dataset_path = kwargs["train_dataset_path"]
         dataset = self.load_dataset(self.train_dataset_path)
         full_train = next(iter(DataLoader(dataset, batch_size=len(dataset))))[0]
-        train_mean = full_train.exp().mean(0).mean(-1).unsqueeze(-1)
         self.image_size, self.image_channels = full_train.size(1), full_train.size(-1)
         self.learning_rate = kwargs["lr"]
 
         self.n_steps = kwargs["n_steps"]
-
-        transforms = {"oh": get_transform_oh(), "exp_mean": get_transform_exp_mean(train_mean),
-                      "exp": get_transform_exp(), "l2": get_transform_l2(), "mean_std": get_transform_mean_std(),
-                      "mean_max": get_transform_mean_max(), "permute": Permute()}
 
         self.dataset = TransformDataset(dataset, transform=transforms[kwargs["transform"]])
 
@@ -134,7 +130,7 @@ class Configs(BaseConfigs):
             image_channels=self.image_channels,
             n_channels=self.n_channels,
             ch_mults=self.channel_multipliers,
-            is_attn=self.is_attention, bn=kwargs["bn"]
+            is_attn=self.is_attention
         ).to(self.device)
 
         if kwargs["load_checkpoint"] is not None:
@@ -236,93 +232,6 @@ class Configs(BaseConfigs):
             if self.save_checkpoint:
                 experiment.save_checkpoint()
             torch.save(self.eps_model, self.eps_model_save_path)
-
-
-class TransformDataset(torch.utils.data.Dataset):
-    def __init__(self, dataset=None, transform=None):
-        self.dataset = dataset
-        self.transform = transform
-
-    def __getitem__(self, index):
-        data, target = self.dataset[index]
-
-        if self.transform is not None:
-            data = self.transform(data)
-        return data  # , target
-
-    def __len__(self):
-        return self.dataset.__len__()
-
-
-class Exp(object):
-    def __call__(self, sample):
-        return sample.exp()
-
-
-class Permute(object):
-    def __call__(self, sample):
-        return sample.permute(2, 0, 1)
-
-
-def get_transform_oh():
-    class Oh(object):
-        def __call__(self, sample):
-            one_hot = torch.nn.functional.one_hot(sample.argmax(-1), sample.size(-1))
-            return one_hot * 0.5
-
-    return torchvision.transforms.Compose([Oh(), Permute()])
-
-
-def get_transform_exp_mean(mean):
-    class Mean(object):
-        def __call__(self, sample):
-            return (sample - mean).detach()
-
-    return torchvision.transforms.Compose([Exp(), Mean(), Permute()])
-
-
-def get_transform_exp():
-    class Rescale(object):
-        def __call__(self, sample):
-            return (sample).detach()
-
-    return torchvision.transforms.Compose([Exp(), Rescale(), Permute()])
-
-
-def get_transform_l2():
-    class L2(object):
-        def __call__(self, sample):
-            return torch.nn.functional.normalize(sample, dim=-1)
-
-    return torchvision.transforms.Compose([L2(), Permute()])
-
-
-def get_transform_mean_max():
-    class Mean_Max(object):
-        def __call__(self, sample):
-            return (sample - sample.mean(-1).unsqueeze(-1)) / sample.abs().max(-1)[0].unsqueeze(-1)
-
-    return torchvision.transforms.Compose([Mean_Max(), Permute()])
-
-
-def get_transform_mean_std():
-    class Mean_Std(object):
-        def __call__(self, sample):
-            return (sample - sample.mean(-1).unsqueeze(-1)) / sample.std(-1).unsqueeze(-1)
-
-    return torchvision.transforms.Compose([Mean_Std(), Permute()])
-
-
-def str2bool(v):
-    import argparse
-    if isinstance(v, bool):
-        return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
-        return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
-        return False
-    else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 
 def main(**kwargs):
