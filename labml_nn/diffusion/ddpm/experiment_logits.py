@@ -189,7 +189,7 @@ class Configs(BaseConfigs):
                        "l2": l2,
                        "reconstructions": [wandb.Image(image) for image in reconstructions],
                        "images": [wandb.Image(image) for image in self.vq_decode(originals)],
-                       "xT_mean": xT.mean(), "xT": wandb.Histogram(xT[0, :, 0, 0])})
+                       "xT_mean": xT.mean(), "xT": wandb.Histogram(xT[0, :, 0, 0].cpu().detach())})
 
     def train(self):
         """
