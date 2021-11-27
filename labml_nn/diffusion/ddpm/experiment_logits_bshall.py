@@ -26,6 +26,9 @@ class BShallConfigs(Configs):
         dist = self.vqvae_model.decode(logits)
         return dist.probs.argmax(-1).float()
 
+    def quantize_logits(self, codes):
+        return codes.argmin(1)
+
 
 if __name__ == '__main__':
     import argparse

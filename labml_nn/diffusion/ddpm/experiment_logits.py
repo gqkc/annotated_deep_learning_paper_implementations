@@ -96,8 +96,11 @@ class Configs(BaseConfigs):
         vqvae_model.eval()
         return vqvae_model
 
+    def quantize_logits(self, codes):
+        return codes.argmax(1)
+
     def vq_decode(self, codes):
-        return self.vqvae_model.decode(codes.argmax(1))
+        return self.vqvae_model.decode(self.quantize_logits(codes))
 
     def load_dataset(self, path):
         return torch.load(path, map_location="cpu")
@@ -185,14 +188,20 @@ class Configs(BaseConfigs):
 
     def reconstruct(self):
         with torch.no_grad():
+            # get original logits x0 from image data
             number_of_rec = min(self.n_samples, self.data_loader.batch_size)
             originals = next(iter(self.data_loader))[:number_of_rec].to(self.device)
+            # noise the original logits to T
             t = torch.ones((originals.size(0),), device=originals.device, dtype=torch.long) * self.n_steps - 1
             xT = self.diffusion.q_sample(x0=originals, t=t)
+            # denoise the xT to get x0_tilde
             x0_tilde, _, reconstructions = self.sample(x=xT)
+            # get the l2 distance between original logits and reconstructions
             l2 = torch.square(originals - x0_tilde).mean()
-            max_values = (x0_tilde.gather(1, originals.argmax(1).unsqueeze(1)) < x0_tilde)
+            # get the rank of the original code in reconstructions
+            max_values = (x0_tilde.gather(1, self.quantize_logits(originals).unsqueeze(1)) < x0_tilde)
             rank = max_values.sum(dim=1).float().mean()
+            # plot xT to check if it seems gaussian
             xT_ = xT.cpu().detach().view(xT.size(0), xT.size(1), -1)
             # xT_lines = [xT_[0, :, i] for i in range(xT_.size(-1))]
             xT_lines = [originals[0, :, 0, 0].cpu().detach(), xT_[0, :, 0]]
