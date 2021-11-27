@@ -18,7 +18,7 @@ class MilaConfigs(Configs):
         return dataset
 
     def vq_decode(self, logits: torch.Tensor) -> torch.Tensor:
-        latents = self.select_best_codebook_vector(logits)
+        latents = self.quantize_logits(logits)
         reconstructions = self.vqvae_model.decode(latents)
         return reconstructions
 
