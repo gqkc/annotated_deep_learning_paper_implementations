@@ -195,10 +195,10 @@ class Configs(BaseConfigs):
             rank = max_values.sum(dim=1).float().mean()
             xT_ = xT.cpu().detach().view(xT.size(0), xT.size(1), -1)
             # xT_lines = [xT_[0, :, i] for i in range(xT_.size(-1))]
-            xT_lines = [xT_[0, :, 0]]
+            xT_lines = [originals[0, :, 0, 0].cpu().detach(), xT_[0, :, 0]]
             xT_lines_plot = wandb.plot.line_series(xs=range(xT.size(1)), ys=xT_lines,
-                                                   keys=range(len(xT_lines)),
-                                                   title="xT[0]", xname="Codebook vectors")
+                                                   keys=["x0[0,0,0,:]", "xT[0,0,0,:]"],
+                                                   title="logits", xname="Codebook vectors")
             wandb.log({"rank": rank,
                        "l2": l2,
                        "reconstructions": [wandb.Image(image) for image in reconstructions],
