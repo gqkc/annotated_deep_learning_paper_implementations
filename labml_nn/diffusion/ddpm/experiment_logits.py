@@ -185,12 +185,17 @@ class Configs(BaseConfigs):
             l2 = torch.square(originals - x0_tilde).mean()
             max_values = (x0_tilde.gather(1, originals.argmax(1).unsqueeze(1)) < x0_tilde)
             rank = max_values.sum(dim=1).float().mean()
+            xT_ = xT.cpu().detach().view(xT.size(0), xT.size(1), -1)
+            # xT_lines = [xT_[0, :, i] for i in range(xT_.size(-1))]
+            xT_lines = [xT_[0, :, 0]]
+            xT_lines_plot = wandb.plot.line_series(xs=range(xT.size(1)), ys=xT_lines,
+                                                   keys=range(len(xT_lines)),
+                                                   title="xT[0]", xname="Codebook vectors")
             wandb.log({"rank": rank,
                        "l2": l2,
                        "reconstructions": [wandb.Image(image) for image in reconstructions],
                        "images": [wandb.Image(image) for image in self.vq_decode(originals)],
-                       "xT_mean": xT.mean(), "xT": wandb.Histogram(xT[0, :, 0, 0].cpu().detach()),
-                       "xT_": wandb.Graph(xT[0, :, 0, 0].cpu().detach())})
+                       "xT_mean": xT.mean(), "xT": xT_lines_plot})
 
     def train(self):
         """
