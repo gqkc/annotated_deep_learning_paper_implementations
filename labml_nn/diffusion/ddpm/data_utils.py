@@ -5,11 +5,20 @@ from torch.utils.data.dataloader import default_collate
 
 def collate_fn_bn(x):
     batch = default_collate(x)
-    initial_bn = torch.nn.BatchNorm2d()
-    return batch
+    mean, std = batch.mean(1, keepdim=True), batch.std(1, keepdim=True) + 1e-5
+    bn_batch = (batch - mean) / std
+    return bn_batch
 
 
-collates = {"default": default_collate, "bn": collate_fn_bn}
+def collate_fn_bn2d(initial_bn):
+    def collate_fn_bn2d_(x):
+        batch = default_collate(x)
+        return initial_bn(batch)
+
+    return collate_fn_bn2d_
+
+
+collates = {"default": default_collate, "bn": collate_fn_bn2d}
 
 
 class TransformDataset(torch.utils.data.Dataset):

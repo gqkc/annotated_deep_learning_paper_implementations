@@ -32,7 +32,8 @@ from labml_nn.diffusion.ddpm.ddpm_kl import DenoiseDiffusionKL
 from labml_nn.diffusion.ddpm.unet import UNet
 from mixturevqvae.models import VAE
 import os
-from labml_nn.diffusion.ddpm.data_utils import TransformDataset, str2bool, transforms
+from labml_nn.diffusion.ddpm.data_utils import TransformDataset, str2bool, transforms, collate_fn_bn2d, default_collate, \
+    collate_fn_bn
 
 
 class Configs(BaseConfigs):
@@ -119,9 +120,16 @@ class Configs(BaseConfigs):
 
         self.dataset = TransformDataset(dataset, transform=transforms[kwargs["transform"]])
 
+        # create the collate for the dataloader
+        collate = default_collate
+        if kwargs["collate"] == "bn":
+            collate = collate_fn_bn2d(
+                torch.nn.BatchNorm2d(self.image_channels, momentum=None, affine=False, track_running_stats=False))
+        elif kwargs["collate"] == "bn2d":
+            collate = collate_fn_bn
         # Create dataloader
         self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True, pin_memory=True,
-                                                       drop_last=True)
+                                                       drop_last=True, collate_fn=collate)
         self.channel_multipliers = kwargs["channel_multipliers"]
         self.is_attention = [False] * len(self.channel_multipliers)
         self.is_attention[-1] = True
@@ -299,7 +307,7 @@ def get_parser():
     parser.add_argument('--load_checkpoint', type=str, default=None)
     parser.add_argument('--num_channels', type=int, default=1)
     parser.add_argument('--lr', type=float, default=2e-5)
-    parser.add_argument('--bn', type=str2bool, default=False)
+    parser.add_argument('--collate', type=str, default="default")
     parser.add_argument('--beta_start', type=float, default=0.0001)
     parser.add_argument('--beta_end', type=float, default=0.02)
 
