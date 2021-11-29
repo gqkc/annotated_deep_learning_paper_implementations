@@ -106,8 +106,7 @@ def get_transform_temp_softmax(**kwargs):
             self.temperature = temperature
 
         def __call__(self, sample):
-            return torch.nn.functional.softmax(sample, dim=-1, temperature=self.temperature,
-                                               mult_input=kwargs["mult_input"])
+            return torch.nn.functional.softmax(sample / self.temperature, dim=-1)
 
     return torchvision.transforms.Compose(
         [GetSimilarity(kwargs["mult_input"]), TempSoftmax(kwargs["temperature"]), Permute()])
