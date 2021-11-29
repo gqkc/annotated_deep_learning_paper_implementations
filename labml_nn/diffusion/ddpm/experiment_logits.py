@@ -121,7 +121,7 @@ class Configs(BaseConfigs):
         self.learning_rate = kwargs["lr"]
 
         self.n_steps = kwargs["n_steps"]
-        transform = transforms[kwargs["transform"]](temperature=kwargs["temp_softmax"], mult_inputs=self.mult_inputs)
+        transform = transforms[kwargs["transform"]](temperature=kwargs["temp_softmax"], mult_input=self.mult_inputs)
         self.dataset = TransformDataset(dataset, transform=transform)
 
         # create the collate for the dataloader
