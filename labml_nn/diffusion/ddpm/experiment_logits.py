@@ -15,25 +15,24 @@ Save the images inside [`data/celebA` folder](#dataset_path).
 The paper had used a exponential moving average of the model with a decay of $0.9999$. We have skipped this for
 simplicity.
 """
+import os
 from datetime import datetime
 from typing import List
 
 import torch
 import torch.utils.data
-import torchvision
 import wandb
-from labml import tracker, experiment, monit
-from labml.configs import BaseConfigs, option
+from labml import experiment, monit
+from labml.configs import BaseConfigs
 from labml_helpers.device import DeviceConfigs
+from mixturevqvae.models import VAE
 from torch.utils.data import DataLoader
 
 from labml_nn.diffusion.ddpm import DenoiseDiffusion
+from labml_nn.diffusion.ddpm.data_utils import TransformDataset, transforms, collate_fn_bn2d, default_collate, \
+    collate_fn_bn
 from labml_nn.diffusion.ddpm.ddpm_kl import DenoiseDiffusionKL
 from labml_nn.diffusion.ddpm.unet import UNet
-from mixturevqvae.models import VAE
-import os
-from labml_nn.diffusion.ddpm.data_utils import TransformDataset, str2bool, transforms, collate_fn_bn2d, default_collate, \
-    collate_fn_bn
 
 
 class Configs(BaseConfigs):
@@ -87,6 +86,8 @@ class Configs(BaseConfigs):
     eps_model_save_path: str
     # whether to save checkpoints the labml way
     save_checkpoint: bool
+    # multiply logits by this value, to ensure the given data are similarities
+    mult_inputs = 1.0
 
     def vq_load(self, **kwargs):
         vqvae_model = VAE.VQVAE_(kwargs["latent_dim"], kwargs["k"], kwargs["gumbel"], beta=1., alpha=1.,
@@ -120,8 +121,8 @@ class Configs(BaseConfigs):
         self.learning_rate = kwargs["lr"]
 
         self.n_steps = kwargs["n_steps"]
-
-        self.dataset = TransformDataset(dataset, transform=transforms[kwargs["transform"]])
+        transform = transforms[kwargs["transform"]](temperature=kwargs["temp_softmax"], mult_inputs=self.mult_inputs)
+        self.dataset = TransformDataset(dataset, transform=transform)
 
         # create the collate for the dataloader
         collate = default_collate
@@ -299,7 +300,7 @@ def get_parser():
     parser.add_argument('--train_dataset_path', type=str)
     parser.add_argument('--kl', type=bool, default=False)
     parser.add_argument('--n_steps', type=int, default=1000)
-    parser.add_argument('--transform', type=str, default="l2")
+    parser.add_argument('--transform', type=str, default="default")
 
     parser.add_argument("--latent_dim", default=32, type=int)
     parser.add_argument("--k", default=64, type=int)
@@ -319,6 +320,7 @@ def get_parser():
     parser.add_argument('--collate', type=str, default="default")
     parser.add_argument('--beta_start', type=float, default=0.0001)
     parser.add_argument('--beta_end', type=float, default=0.02)
+    parser.add_argument('--temp_softmax', type=float, default=1.)
 
     return parser
 

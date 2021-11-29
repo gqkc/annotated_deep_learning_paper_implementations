@@ -6,6 +6,8 @@ from labml_nn.diffusion.ddpm.vqvae import VQVAE
 
 
 class BShallConfigs(Configs):
+    # override mult_inputs because we have distances not similarities
+    mult_inputs = -1.0
 
     def vq_load(self, **kwargs):
         vqvae_model = VQVAE(channels=256,
@@ -27,12 +29,10 @@ class BShallConfigs(Configs):
         return dist.probs.argmax(-1).float()
 
     def quantize_logits(self, codes):
-        return codes.argmin(1)
+        return codes.argmax(1)
 
 
 if __name__ == '__main__':
-    import argparse
-
     parser = get_parser()
     global args
     args = parser.parse_args()
