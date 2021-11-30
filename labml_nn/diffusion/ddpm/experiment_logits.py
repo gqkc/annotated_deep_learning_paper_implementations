@@ -174,17 +174,25 @@ class Configs(BaseConfigs):
                 x = torch.randn([self.n_samples, self.image_channels, self.image_size, self.image_size],
                                 device=self.device)
 
+            log_iteration = int(self.n_steps / 20)
+            logits_chain = []
             # Remove noise for $T$ steps
             for t_ in monit.iterate('Sample', self.n_steps):
                 # $t$
                 t = self.n_steps - t_ - 1
                 # Sample from $\textcolor{cyan}{p_\theta}(x_{t-1}|x_t)$
                 x = self.diffusion.p_sample(x, x.new_full((self.n_samples,), t, dtype=torch.long))
-
+                if t_ % log_iteration == 0:
+                    logits_chain.append(x[0].detach().clone().unsqueeze(0))
+            # log sample chain
+            logits_chain_ = torch.cat(logits_chain, dim=0)
+            samples_chain = self.vq_decode(logits_chain_.to(self.device))
             # Log samples
             samples = self.vq_decode(x.to(self.device))
             # tracker.save('sample', samples)
-            wandb.log({"sample": [wandb.Image(sample) for sample in samples]})
+            wandb.log({"sample": [wandb.Image(sample) for sample in samples], "sample_chain": [wandb.Image(sample_) for
+                                                                                               sample_ in
+                                                                                               samples_chain]})
             return x, x.argmax(1), samples
 
     def reconstruct(self):
@@ -245,7 +253,7 @@ class Configs(BaseConfigs):
         """
         for _ in monit.loop(self.epochs):
             # Train the model
-            self.train()
+            # self.train()
             # Sample some images
             self.sample()
             # Reconstructions
@@ -261,7 +269,7 @@ class Configs(BaseConfigs):
 def main(**kwargs):
     # Create experiment
     experiment.create(name=kwargs["name_exp"])
-    run_name = datetime.now().strftime("train-%Y-%m-%d-%H-%M")
+    run_name = datetime.now().strftime("train-%Y-%m-%d-%H-%M-%S")
 
     # Create configurations
     configs = kwargs["config"]
