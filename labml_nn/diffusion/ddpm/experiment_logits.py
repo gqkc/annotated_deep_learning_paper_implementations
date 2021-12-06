@@ -90,9 +90,14 @@ class Configs(BaseConfigs):
     mult_inputs = 1.0
 
     def vq_load(self, **kwargs):
-        vqvae_model = VAE.VQVAE_(kwargs["latent_dim"], kwargs["k"], kwargs["gumbel"], beta=1., alpha=1.,
-                                 archi=kwargs["archi"], data_type="continuous", ema=kwargs["ema"],
-                                 num_channels=kwargs["channels"], compare=kwargs["compare"]).to(self.device)
+        if kwargs["vq_class"] == "old":
+            vqvae_model = VAE.VectorQuantizedVAE(kwargs["latent_dim"], kwargs["k"], kwargs["gumbel"], beta=1., alpha=1.,
+                                                 archi=kwargs["archi"], data_type="continuous", ema=kwargs["ema"],
+                                                 num_channels=kwargs["channels"]).to(self.device)
+        else:
+            vqvae_model = VAE.VQVAE_(kwargs["latent_dim"], kwargs["k"], kwargs["gumbel"], beta=1., alpha=1.,
+                                     archi=kwargs["archi"], data_type="continuous", ema=kwargs["ema"],
+                                     num_channels=kwargs["channels"], compare=kwargs["compare"]).to(self.device)
         vqvae_model.load_state_dict(torch.load(kwargs["vq_path"], map_location=self.device))
         vqvae_model.eval()
         return vqvae_model
@@ -335,6 +340,7 @@ def get_parser():
 
 if __name__ == '__main__':
     parser = get_parser()
+    parser.add_argument('--vq_class', type=str, default="default")
 
     args = parser.parse_args()
     main(config=Configs(), name_exp="diffusion_logits", **vars(args))
