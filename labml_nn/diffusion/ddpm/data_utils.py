@@ -1,7 +1,7 @@
 import torch
 import torchvision
 from torch.utils.data.dataloader import default_collate
-from torchvision import transforms, datasets
+from torchvision import datasets
 
 
 def collate_fn_bn(x):
@@ -70,9 +70,15 @@ def get_transform_default(**kwargs):
     return torchvision.transforms.Compose([GetSimilarity(kwargs["mult_input"]), Permute()])
 
 
-def get_transform_mila(**kwargs):
+def get_transform_mila_3(**kwargs):
     return torchvision.transforms.Compose([
         torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    ])
+
+
+def get_transform_mila_1(**kwargs):
+    return torchvision.transforms.Compose([
+        torchvision.transforms.Normalize((0.5), (0.5))
     ])
 
 
@@ -140,7 +146,7 @@ def get_transform_temp_softmax(**kwargs):
 transforms = {"oh": get_transform_oh, "exp": get_transform_exp, "l2": get_transform_l2,
               "mean_std": get_transform_mean_std,
               "mean_max": get_transform_mean_max, "permute": Permute, "default": get_transform_default,
-              "softmax": get_transform_temp_softmax, "mila": get_transform_mila}
+              "softmax": get_transform_temp_softmax, "mila_1": get_transform_mila_1, "mila_3": get_transform_mila_3}
 
 
 def str2bool(v):

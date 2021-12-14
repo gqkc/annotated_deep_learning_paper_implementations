@@ -12,7 +12,8 @@ class MilaConfigs(Configs):
     def vq_load(self, **kwargs):
         vqvae_model = VectorQuantizedVAE(kwargs["num_channels"], kwargs["latent_dim"], kwargs["k"],
                                          pad=kwargs["pad_vqvae"]).to(self.device)
-        vqvae_model.load_state_dict(torch.load(kwargs["vq_path"], map_location=self.device))
+        if kwargs["vq_path"] is not None:
+            vqvae_model.load_state_dict(torch.load(kwargs["vq_path"], map_location=self.device))
         vqvae_model.eval()
         return vqvae_model
 
@@ -27,7 +28,6 @@ class MilaConfigs(Configs):
 
     def quantize_logits(self, codes):
         return codes.argmax(1)
-
 
 
 if __name__ == '__main__':

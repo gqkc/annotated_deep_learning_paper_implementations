@@ -269,7 +269,7 @@ class Configs(BaseConfigs):
         """
         for _ in monit.loop(self.epochs):
             # Train the model
-            #self.train()
+            self.train()
             # Sample some images
             self.sample()
             # Reconstructions
@@ -320,7 +320,7 @@ def main(**kwargs):
 def get_parser():
     import argparse
     parser = argparse.ArgumentParser(description='parser')
-    parser.add_argument('--vq_path', type=str)
+    parser.add_argument('--vq_path', type=str, default=None)
     parser.add_argument('--train_dataset_path', type=str)
     parser.add_argument('--kl', type=bool, default=False)
     parser.add_argument('--n_steps', type=int, default=1000)
