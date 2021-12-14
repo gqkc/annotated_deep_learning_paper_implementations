@@ -21,7 +21,7 @@ def collate_fn_bn2d(initial_bn):
 
 def collate_fn_vq(vq_vae):
     def collate_fn_vq_(x):
-        batch = default_collate(x).permute(0, 2, 1, 3)
+        batch = default_collate(x).permute(0, 2, 1, 3).to(next(vq_vae.parameters()).device)
         z_e_x, _ = vq_vae.net.encode(batch)
         return z_e_x.detach().permute(0, 3, 1, 2)
 
