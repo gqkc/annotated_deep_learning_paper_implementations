@@ -28,6 +28,15 @@ def collate_fn_vq(vq_vae):
     return collate_fn_vq_
 
 
+def collate_fn_mila(vq_vae):
+    def collate_fn_vq_(x):
+        batch = default_collate(x).to(next(vq_vae.parameters()).device)
+        z_e_x = vq_vae.encoder(batch)
+        return z_e_x.detach()
+
+    return collate_fn_vq_
+
+
 collates = {"default": default_collate, "bn": collate_fn_bn2d}
 
 
@@ -59,6 +68,12 @@ class Permute(object):
 
 def get_transform_default(**kwargs):
     return torchvision.transforms.Compose([GetSimilarity(kwargs["mult_input"]), Permute()])
+
+
+def get_transform_mila(**kwargs):
+    return torchvision.transforms.Compose([
+        torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    ])
 
 
 class GetSimilarity(object):
@@ -125,7 +140,7 @@ def get_transform_temp_softmax(**kwargs):
 transforms = {"oh": get_transform_oh, "exp": get_transform_exp, "l2": get_transform_l2,
               "mean_std": get_transform_mean_std,
               "mean_max": get_transform_mean_max, "permute": Permute, "default": get_transform_default,
-              "softmax": get_transform_temp_softmax}
+              "softmax": get_transform_temp_softmax, "mila": get_transform_mila}
 
 
 def str2bool(v):
@@ -140,23 +155,25 @@ def str2bool(v):
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
 
-def get_datasets(dataset, subset=None):
+def get_datasets(dataset, subset=None, transform=None):
     '''
     Build dataloaders for different datasets. The dataloader can be easily iterated on.
     Supports Mnist, FashionMNIST, more to come
     '''
+    if transform == None:
+        transform = torchvision.transforms.ToTensor()
 
     if dataset == 'mnist':
-        train_dataset = datasets.MNIST('./data', train=True, download=True, transform=torchvision.transforms.ToTensor())
-        val_dataset = datasets.MNIST('./data', train=False, transform=torchvision.transforms.ToTensor())
+        train_dataset = datasets.MNIST('./data', train=True, download=True, transform=transform)
+        val_dataset = datasets.MNIST('./data', train=False, transform=transform)
     elif dataset == 'fashionmnist':
         train_dataset = datasets.FashionMNIST('./data', train=True, download=True,
-                                              transform=torchvision.transforms.ToTensor())
-        val_dataset = datasets.FashionMNIST('./data', train=False, transform=torchvision.transforms.ToTensor())
+                                              transform=transform)
+        val_dataset = datasets.FashionMNIST('./data', train=False, transform=transform)
     elif dataset == 'cifar':
         train_dataset = datasets.CIFAR10('./data', train=True, download=True,
-                                         transform=torchvision.transforms.ToTensor())
-        val_dataset = datasets.CIFAR10('./data', train=False, transform=torchvision.transforms.ToTensor())
+                                         transform=transform)
+        val_dataset = datasets.CIFAR10('./data', train=False, transform=transform)
     else:
         raise ValueError(dataset)
 

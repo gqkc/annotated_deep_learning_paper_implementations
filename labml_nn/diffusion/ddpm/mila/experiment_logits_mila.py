@@ -16,7 +16,7 @@ class MilaConfigs(Configs):
         vqvae_model.eval()
         return vqvae_model
 
-    def load_dataset(self, path: str) -> torch.utils.data.Dataset:
+    def load_dataset(self, path: str, **kwargs) -> torch.utils.data.Dataset:
         dataset = torch.load(path, map_location="cpu")
         return dataset
 
@@ -27,6 +27,7 @@ class MilaConfigs(Configs):
 
     def quantize_logits(self, codes):
         return codes.argmax(1)
+
 
 
 if __name__ == '__main__':
