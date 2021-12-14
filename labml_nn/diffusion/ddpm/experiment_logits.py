@@ -138,7 +138,9 @@ class Configs(BaseConfigs):
         self.learning_rate = kwargs["lr"]
 
         self.n_steps = kwargs["n_steps"]
-        transform = transforms[kwargs["transform"]](temperature=kwargs["temp_softmax"], mult_input=self.mult_inputs)
+        transform = kwargs["transform"]
+        if transform is not None:
+            transform = transforms[kwargs["transform"]](temperature=kwargs["temp_softmax"], mult_input=self.mult_inputs)
         self.dataset = TransformDataset(dataset, transform=transform)
 
         self.image_size, self.image_channels = self.get_sizes(dataset)
@@ -322,7 +324,7 @@ def get_parser():
     parser.add_argument('--train_dataset_path', type=str)
     parser.add_argument('--kl', type=bool, default=False)
     parser.add_argument('--n_steps', type=int, default=1000)
-    parser.add_argument('--transform', type=str, default="default")
+    parser.add_argument('--transform', type=str, default=None)
 
     parser.add_argument("--latent_dim", default=32, type=int)
     parser.add_argument("--k", default=64, type=int)

@@ -29,7 +29,6 @@ if __name__ == '__main__':
     parser = get_parser()
     parser.add_argument('--dataset', type=str)
     parser.add_argument('--vq_class', type=str, default="default")
-
     global args
     args = parser.parse_args()
     main(config=VQConfigs(), name_exp="diffusion_logits_vq", **vars(args))
