@@ -17,7 +17,7 @@ class VQConfigs(Configs):
 
     def get_sizes(self, dataset):
         full_train = next(iter(DataLoader(dataset, batch_size=2)))[0]
-        sizes = self.vqvae_model.net.encode(full_train)[0].size()
+        sizes = self.vqvae_model.net.encode(full_train.to(self.device))[0].size()
         return sizes[1], sizes[-1]
 
     def vq_decode(self, codes):
