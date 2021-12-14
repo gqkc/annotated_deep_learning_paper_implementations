@@ -146,7 +146,7 @@ class Configs(BaseConfigs):
         # create the collate for the dataloader
         collate = self.get_collate(**kwargs)
         # Create dataloader
-        self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True, pin_memory=True,
+        self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True,
                                                        drop_last=True, collate_fn=collate)
         self.channel_multipliers = kwargs["channel_multipliers"]
         self.is_attention = [False] * len(self.channel_multipliers)
@@ -267,7 +267,7 @@ class Configs(BaseConfigs):
         """
         for _ in monit.loop(self.epochs):
             # Train the model
-            self.train()
+            # self.train()
             # Sample some images
             self.sample()
             # Reconstructions
