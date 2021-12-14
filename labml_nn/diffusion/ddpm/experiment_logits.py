@@ -108,8 +108,21 @@ class Configs(BaseConfigs):
     def vq_decode(self, codes):
         return self.vqvae_model.decode(self.quantize_logits(codes))
 
-    def load_dataset(self, path):
+    def load_dataset(self, path, **kwargs):
         return torch.load(path, map_location="cpu")
+
+    def get_collate(self, **kwargs):
+        collate = default_collate
+        if kwargs["collate"] == "bn":
+            collate = collate_fn_bn2d(
+                torch.nn.BatchNorm2d(self.image_channels, momentum=None, affine=False, track_running_stats=False))
+        elif kwargs["collate"] == "bn2d":
+            collate = collate_fn_bn
+        return collate
+
+    def get_sizes(self, dataset):
+        full_train = next(iter(DataLoader(dataset, batch_size=len(dataset))))[0]
+        return full_train.size(1), full_train.size(-1)
 
     def init(self, **kwargs):
         # to save eps_model
@@ -120,22 +133,18 @@ class Configs(BaseConfigs):
         # load the vqvae model from the given path
         self.vqvae_model = self.vq_load(**kwargs)
         self.train_dataset_path = kwargs["train_dataset_path"]
-        dataset = self.load_dataset(self.train_dataset_path)
-        full_train = next(iter(DataLoader(dataset, batch_size=len(dataset))))[0]
-        self.image_size, self.image_channels = full_train.size(1), full_train.size(-1)
+        dataset = self.load_dataset(self.train_dataset_path, **kwargs)
+
         self.learning_rate = kwargs["lr"]
 
         self.n_steps = kwargs["n_steps"]
         transform = transforms[kwargs["transform"]](temperature=kwargs["temp_softmax"], mult_input=self.mult_inputs)
         self.dataset = TransformDataset(dataset, transform=transform)
 
+        self.image_size, self.image_channels = self.get_sizes(dataset)
+
         # create the collate for the dataloader
-        collate = default_collate
-        if kwargs["collate"] == "bn":
-            collate = collate_fn_bn2d(
-                torch.nn.BatchNorm2d(self.image_channels, momentum=None, affine=False, track_running_stats=False))
-        elif kwargs["collate"] == "bn2d":
-            collate = collate_fn_bn
+        collate = self.get_collate(**kwargs)
         # Create dataloader
         self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True, pin_memory=True,
                                                        drop_last=True, collate_fn=collate)
@@ -258,7 +267,7 @@ class Configs(BaseConfigs):
         """
         for _ in monit.loop(self.epochs):
             # Train the model
-            self.train()
+            #self.train()
             # Sample some images
             self.sample()
             # Reconstructions

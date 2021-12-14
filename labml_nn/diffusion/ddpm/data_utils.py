@@ -1,6 +1,7 @@
 import torch
 import torchvision
 from torch.utils.data.dataloader import default_collate
+from torchvision import transforms, datasets
 
 
 def collate_fn_bn(x):
@@ -16,6 +17,15 @@ def collate_fn_bn2d(initial_bn):
         return initial_bn(batch)
 
     return collate_fn_bn2d_
+
+
+def collate_fn_vq(vq_vae):
+    def collate_fn_vq_(x):
+        batch = default_collate(x).permute(0, 2, 1, 3)
+        z_e_x, _ = vq_vae.net.encode(batch)
+        return z_e_x.detach().permute(0, 3, 1, 2)
+
+    return collate_fn_vq_
 
 
 collates = {"default": default_collate, "bn": collate_fn_bn2d}
@@ -128,3 +138,30 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
+def get_datasets(dataset, subset=None):
+    '''
+    Build dataloaders for different datasets. The dataloader can be easily iterated on.
+    Supports Mnist, FashionMNIST, more to come
+    '''
+
+    if dataset == 'mnist':
+        train_dataset = datasets.MNIST('./data', train=True, download=True, transform=torchvision.transforms.ToTensor())
+        val_dataset = datasets.MNIST('./data', train=False, transform=torchvision.transforms.ToTensor())
+    elif dataset == 'fashionmnist':
+        train_dataset = datasets.FashionMNIST('./data', train=True, download=True,
+                                              transform=torchvision.transforms.ToTensor())
+        val_dataset = datasets.FashionMNIST('./data', train=False, transform=torchvision.transforms.ToTensor())
+    elif dataset == 'cifar':
+        train_dataset = datasets.CIFAR10('./data', train=True, download=True,
+                                         transform=torchvision.transforms.ToTensor())
+        val_dataset = datasets.CIFAR10('./data', train=False, transform=torchvision.transforms.ToTensor())
+    else:
+        raise ValueError(dataset)
+
+    if subset:
+        train_dataset = torch.utils.data.Subset(train_dataset, list(range(subset)))
+        val_dataset = torch.utils.data.Subset(val_dataset, list(range(subset)))
+
+    return train_dataset, val_dataset
