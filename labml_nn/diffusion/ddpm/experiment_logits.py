@@ -121,7 +121,7 @@ class Configs(BaseConfigs):
         return collate
 
     def get_sizes(self, dataset):
-        full_train = next(iter(DataLoader(dataset, batch_size=len(dataset))))[0]
+        full_train = next(iter(DataLoader(dataset, batch_size=2)))[0]
         return full_train.size(1), full_train.size(-1)
 
     def init(self, **kwargs):

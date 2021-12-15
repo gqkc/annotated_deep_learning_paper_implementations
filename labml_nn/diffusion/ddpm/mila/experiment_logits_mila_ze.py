@@ -14,7 +14,7 @@ class MilaVQConfigs(MilaConfigs):
 
     def load_dataset(self, path: str, **kwargs) -> torch.utils.data.Dataset:
 
-        dataset = get_datasets(kwargs["dataset"], transform=kwargs["transform"])
+        dataset = get_datasets(kwargs["dataset"])
         return dataset[0]
 
     def get_collate(self, **kwargs):
@@ -26,7 +26,7 @@ class MilaVQConfigs(MilaConfigs):
         return reconstructions
 
     def get_sizes(self, dataset):
-        full_train = next(iter(DataLoader(dataset, batch_size=2, )))[0]
+        full_train = next(iter(DataLoader(dataset, batch_size=2 )))[0]
         sizes = self.vqvae_model.encoder(full_train.to(self.device)).size()
         return sizes[-1], sizes[1]
 
