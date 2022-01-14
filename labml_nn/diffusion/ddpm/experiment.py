@@ -106,6 +106,9 @@ class Configs(BaseConfigs):
         return collate_fn_vq_
 
     def init(self, **kwargs):
+        self.is_attention = [False] * len(self.channel_multipliers)
+        self.is_attention[-1] = True
+        
         self.vqvae_model = self.vq_load()
         path_folder = os.path.join('output', kwargs["run_name"])
         os.makedirs(path_folder)
@@ -256,6 +259,7 @@ def get_parser():
     parser.add_argument('--beta_start', type=float, default=0.0001)
     parser.add_argument('--beta_end', type=float, default=0.02)
     parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument("--channel_multipliers", default=[1, 2, 2, 4], nargs='+', type=int, help="channel multipliers")
     parser.add_argument('--data_path', type=str)
 
     return parser
