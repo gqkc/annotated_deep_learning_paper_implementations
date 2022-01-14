@@ -219,7 +219,7 @@ class MiniimagenetDataset(torch.utils.data.Dataset):
         """
         Get an image
         """
-        return self.dataset.__getitem__(index)[0]
+        return self.dataset.__getitem__(index)[0].permute(2,0,1)
 
 
 @option(Configs.dataset, 'Miniimagenet')
