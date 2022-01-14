@@ -15,18 +15,20 @@ Save the images inside [`data/celebA` folder](#dataset_path).
 The paper had used a exponential moving average of the model with a decay of $0.9999$. We have skipped this for
 simplicity.
 """
+from datetime import datetime
 from typing import List
 
 import torch
 import torch.utils.data
-import torchvision
-from PIL import Image
-
-from labml import lab, tracker, experiment, monit
+import wandb
+from labml import tracker, experiment, monit
 from labml.configs import BaseConfigs, option
 from labml_helpers.device import DeviceConfigs
+from pytorch_vqvae.modules import VectorQuantizedVAE
+
 from labml_nn.diffusion.ddpm import DenoiseDiffusion
 from labml_nn.diffusion.ddpm.unet import UNet
+import os
 
 
 class Configs(BaseConfigs):
@@ -44,7 +46,7 @@ class Configs(BaseConfigs):
     diffusion: DenoiseDiffusion
 
     # Number of channels in the image. $3$ for RGB.
-    image_channels: int = 3
+    image_channels: int = 64
     # Image size
     image_size: int = 32
     # Number of channels in the initial feature map
@@ -56,7 +58,7 @@ class Configs(BaseConfigs):
     is_attention: List[int] = [False, False, False, True]
 
     # Number of time steps $T$
-    n_steps: int = 1_000
+    n_steps: int = 21  # 1_000
     # Batch size
     batch_size: int = 64
     # Number of samples to generate
@@ -67,6 +69,8 @@ class Configs(BaseConfigs):
     # Number of training epochs
     epochs: int = 1_000
 
+    vq_path = "data/vqvae_mini.pt"
+
     # Dataset
     dataset: torch.utils.data.Dataset
     # Dataloader
@@ -75,7 +79,22 @@ class Configs(BaseConfigs):
     # Adam optimizer
     optimizer: torch.optim.Adam
 
-    def init(self):
+    vqvae_model: VectorQuantizedVAE
+    eps_model_save_path: str
+
+    def vq_load(self):
+        vqvae_model = VectorQuantizedVAE(3, 64, 64,
+                                         pad=1).to(self.device)
+        vqvae_model.load_state_dict(torch.load(self.vq_path, map_location=self.device))
+        vqvae_model.eval()
+        return vqvae_model
+
+    def init(self, **kwargs):
+        self.vqvae_model = self.vq_load()
+        path_folder = os.path.join('output', kwargs["run_name"])
+        os.makedirs(path_folder)
+        self.eps_model_save_path = os.path.join(path_folder, "eps_model.pt")
+
         # Create $\textcolor{cyan}{\epsilon_\theta}(x_t, t)$ model
         self.eps_model = UNet(
             image_channels=self.image_channels,
@@ -96,8 +115,34 @@ class Configs(BaseConfigs):
         # Create optimizer
         self.optimizer = torch.optim.Adam(self.eps_model.parameters(), lr=self.learning_rate)
 
-        # Image logging
-        tracker.set_image("sample", True)
+    def quantize_diffused(self, diffused_vector):
+        """
+        Quantize the diffused vector
+        Parameters
+        ----------
+        diffused_vector: diffused vector
+
+        Returns
+        -------
+        the quantized vector
+        """
+        z_q_x_st, z_q_x = self.vqvae_model.codebook.straight_through(diffused_vector)
+        return z_q_x_st
+
+    def vq_decode(self, quantized_vector):
+        """
+        Decode the quantized vector
+
+        Parameters
+        ----------
+        quantized_vector: the quantized vector ready to be decoded
+
+        Returns
+        -------
+        the reconstruction
+        """
+
+        return self.vqvae_model.decoder(quantized_vector)
 
     def sample(self):
         """
@@ -115,8 +160,8 @@ class Configs(BaseConfigs):
                 # Sample from $\textcolor{cyan}{p_\theta}(x_{t-1}|x_t)$
                 x = self.diffusion.p_sample(x, x.new_full((self.n_samples,), t, dtype=torch.long))
 
-            # Log samples
-            tracker.save('sample', x)
+            samples = self.vq_decode(self.quantize_diffused(x))
+            wandb.log({"sample": [wandb.Image(sample) for sample in samples]})
 
     def train(self):
         """
@@ -124,9 +169,7 @@ class Configs(BaseConfigs):
         """
 
         # Iterate through the dataset
-        for data in monit.iterate('Train', self.data_loader):
-            # Increment global step
-            tracker.add_global_step()
+        for data in self.data_loader:
             # Move data to device
             data = data.to(self.device)
 
@@ -139,7 +182,7 @@ class Configs(BaseConfigs):
             # Take an optimization step
             self.optimizer.step()
             # Track the loss
-            tracker.save('loss', loss)
+            wandb.log({'loss': loss})
 
     def run(self):
         """
@@ -150,13 +193,11 @@ class Configs(BaseConfigs):
             self.train()
             # Sample some images
             self.sample()
-            # New line in the console
-            tracker.new_line()
             # Save the model
-            experiment.save_checkpoint()
+            torch.save(self.eps_model, self.eps_model_save_path)
 
 
-class CelebADataset(torch.utils.data.Dataset):
+class MiniimagenetDataset(torch.utils.data.Dataset):
     """
     ### CelebA HQ dataset
     """
@@ -164,65 +205,41 @@ class CelebADataset(torch.utils.data.Dataset):
     def __init__(self, image_size: int):
         super().__init__()
 
-        # CelebA images folder
-        folder = lab.get_data_path() / 'celebA'
+        path = "data/train_latents.pt"
         # List of files
-        self._files = [p for p in folder.glob(f'**/*.jpg')]
-
-        # Transformations to resize the image and convert to tensor
-        self._transform = torchvision.transforms.Compose([
-            torchvision.transforms.Resize(image_size),
-            torchvision.transforms.ToTensor(),
-        ])
+        self.dataset = torch.load(path)
 
     def __len__(self):
         """
         Size of the dataset
         """
-        return len(self._files)
+        return len(self.dataset)
 
     def __getitem__(self, index: int):
         """
         Get an image
         """
-        img = Image.open(self._files[index])
-        return self._transform(img)
+        return self.dataset.__getitem__(index)[0]
 
 
-@option(Configs.dataset, 'CelebA')
-def celeb_dataset(c: Configs):
+@option(Configs.dataset, 'Miniimagenet')
+def miniimagenet(c: Configs):
     """
-    Create CelebA dataset
+    Create miniimagenet dataset
     """
-    return CelebADataset(c.image_size)
-
-
-class MNISTDataset(torchvision.datasets.MNIST):
-    """
-    ### MNIST dataset
-    """
-
-    def __init__(self, image_size):
-        transform = torchvision.transforms.Compose([
-            torchvision.transforms.Resize(image_size),
-            torchvision.transforms.ToTensor(),
-        ])
-
-        super().__init__(str(lab.get_data_path()), train=True, download=True, transform=transform)
-
-    def __getitem__(self, item):
-        return super().__getitem__(item)[0]
-
-
-@option(Configs.dataset, 'MNIST')
-def mnist_dataset(c: Configs):
-    """
-    Create MNIST dataset
-    """
-    return MNISTDataset(c.image_size)
+    return MiniimagenetDataset(c.image_size)
 
 
 def main():
+    # Name of the experiment
+    run_name = datetime.now().strftime("train-%Y-%m-%d-%H-%M-%S")
+    # Create configurations
+    run = wandb.init(
+        project="ho_ze_mila_original",
+        entity='cmap_vq',
+        config=None,
+        name=run_name,
+    )
     # Create experiment
     experiment.create(name='diffuse')
 
@@ -234,7 +251,7 @@ def main():
     })
 
     # Initialize
-    configs.init()
+    configs.init(run_name=run_name)
 
     # Set models for saving and loading
     experiment.add_pytorch_models({'eps_model': configs.eps_model})
@@ -242,6 +259,8 @@ def main():
     # Start and run the training loop
     with experiment.start():
         configs.run()
+
+    run.finish()
 
 
 #
