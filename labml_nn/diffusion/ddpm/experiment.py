@@ -15,20 +15,20 @@ Save the images inside [`data/celebA` folder](#dataset_path).
 The paper had used a exponential moving average of the model with a decay of $0.9999$. We have skipped this for
 simplicity.
 """
+import os
 from datetime import datetime
 from typing import List
 
 import torch
 import torch.utils.data
 import wandb
-from labml import tracker, experiment, monit
+from labml import experiment, monit
 from labml.configs import BaseConfigs, option
 from labml_helpers.device import DeviceConfigs
 from pytorch_vqvae.modules import VectorQuantizedVAE
 
 from labml_nn.diffusion.ddpm import DenoiseDiffusion
 from labml_nn.diffusion.ddpm.unet import UNet
-import os
 
 
 class Configs(BaseConfigs):
