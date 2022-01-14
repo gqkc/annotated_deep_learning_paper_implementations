@@ -58,7 +58,7 @@ class Configs(BaseConfigs):
     is_attention: List[int] = [False, False, False, True]
 
     # Number of time steps $T$
-    n_steps: int = 21  # 1_000
+    n_steps: int = 1_000
     # Batch size
     batch_size: int = 64
     # Number of samples to generate
@@ -219,7 +219,7 @@ class MiniimagenetDataset(torch.utils.data.Dataset):
         """
         Get an image
         """
-        return self.dataset.__getitem__(index)[0].permute(2,0,1)
+        return self.dataset.__getitem__(index)[0].permute(2, 0, 1)
 
 
 @option(Configs.dataset, 'Miniimagenet')
