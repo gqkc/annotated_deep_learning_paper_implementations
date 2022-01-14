@@ -108,7 +108,7 @@ class Configs(BaseConfigs):
     def init(self, **kwargs):
         self.is_attention = [False] * len(self.channel_multipliers)
         self.is_attention[-1] = True
-        
+
         self.vqvae_model = self.vq_load()
         path_folder = os.path.join('output', kwargs["run_name"])
         os.makedirs(path_folder)
@@ -131,7 +131,7 @@ class Configs(BaseConfigs):
             beta_end=self.beta_end
         )
         # Create dataloader
-        self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True, pin_memory=True,
+        self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True,
                                                        collate_fn=self.collate_fn_mila())
         # Create optimizer
         self.optimizer = torch.optim.Adam(self.eps_model.parameters(), lr=self.learning_rate)
