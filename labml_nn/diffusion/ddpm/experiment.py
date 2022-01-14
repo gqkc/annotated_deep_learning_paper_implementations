@@ -58,7 +58,7 @@ class Configs(BaseConfigs):
     is_attention: List[int] = [False, False, False, True]
 
     # Number of time steps $T$
-    n_steps: int = 1_000
+    n_steps: int
     # Batch size
     batch_size: int = 64
     # Number of samples to generate
@@ -68,6 +68,9 @@ class Configs(BaseConfigs):
 
     # Number of training epochs
     epochs: int = 1_000
+
+    beta_start: float
+    beta_end: float
 
     vq_path = "data/vqvae_mini.pt"
 
@@ -108,6 +111,8 @@ class Configs(BaseConfigs):
             eps_model=self.eps_model,
             n_steps=self.n_steps,
             device=self.device,
+            beta_start=self.beta_start,
+            beta_end=self.beta_end
         )
 
         # Create dataloader
@@ -230,6 +235,15 @@ def miniimagenet(c: Configs):
     return MiniimagenetDataset(c.image_size)
 
 
+def get_parser():
+    import argparse
+    parser = argparse.ArgumentParser(description='parser')
+    parser.add_argument('--n_steps', type=int, default=1000)
+    parser.add_argument('--beta_start', type=float, default=0.0001)
+    parser.add_argument('--beta_end', type=float, default=0.02)
+    return parser
+
+
 def main():
     # Name of the experiment
     run_name = datetime.now().strftime("train-%Y-%m-%d-%H-%M-%S")
@@ -240,6 +254,10 @@ def main():
         config=None,
         name=run_name,
     )
+    parser = get_parser()
+
+    args = parser.parse_args()
+
     # Create experiment
     experiment.create(name='diffuse')
 
@@ -247,8 +265,7 @@ def main():
     configs = Configs()
 
     # Set configurations. You can override the defaults by passing the values in the dictionary.
-    experiment.configs(configs, {
-    })
+    experiment.configs(configs, vars(args))
 
     # Initialize
     configs.init(run_name=run_name)
