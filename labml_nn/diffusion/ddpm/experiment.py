@@ -241,6 +241,7 @@ def get_parser():
     parser.add_argument('--n_steps', type=int, default=1000)
     parser.add_argument('--beta_start', type=float, default=0.0001)
     parser.add_argument('--beta_end', type=float, default=0.02)
+    parser.add_argument('--batch_size', type=int, default=32)
     return parser
 
 
