@@ -29,6 +29,7 @@ from pytorch_vqvae.modules import VectorQuantizedVAE
 
 from labml_nn.diffusion.ddpm import DenoiseDiffusion
 from labml_nn.diffusion.ddpm.unet import UNet
+from torch.utils.data.dataloader import default_collate
 
 
 class Configs(BaseConfigs):
@@ -83,7 +84,11 @@ class Configs(BaseConfigs):
     optimizer: torch.optim.Adam
 
     vqvae_model: VectorQuantizedVAE
+
+    # path to save the model
     eps_model_save_path: str
+    # path to the data
+    data_path: str
 
     def vq_load(self):
         vqvae_model = VectorQuantizedVAE(3, 64, 64,
@@ -91,6 +96,14 @@ class Configs(BaseConfigs):
         vqvae_model.load_state_dict(torch.load(self.vq_path, map_location=self.device))
         vqvae_model.eval()
         return vqvae_model
+
+    def collate_fn_mila(self):
+        def collate_fn_vq_(x):
+            batch = default_collate(x).to(next(self.vqvae_model.parameters()).device)
+            z_e_x = self.vqvae_model.encoder(batch)
+            return z_e_x.detach()
+
+        return collate_fn_vq_
 
     def init(self, **kwargs):
         self.vqvae_model = self.vq_load()
@@ -114,9 +127,9 @@ class Configs(BaseConfigs):
             beta_start=self.beta_start,
             beta_end=self.beta_end
         )
-
         # Create dataloader
-        self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True, pin_memory=True)
+        self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True, pin_memory=True,
+                                                       collate_fn=self.collate_fn_mila())
         # Create optimizer
         self.optimizer = torch.optim.Adam(self.eps_model.parameters(), lr=self.learning_rate)
 
@@ -204,15 +217,16 @@ class Configs(BaseConfigs):
 
 class MiniimagenetDataset(torch.utils.data.Dataset):
     """
-    ### CelebA HQ dataset
+    ### Mini imagenet dataset
+    # you can download it with !gdown --id 1Ewc4jLHtxgXsD40IVJrBcjVSURQcYKRg  (12Go)
     """
 
-    def __init__(self, image_size: int):
+    def __init__(self, image_size: int, data_path: str):
         super().__init__()
+        import h5py
 
-        path = "data/train_latents.pt"
-        # List of files
-        self.dataset = torch.load(path)
+        hf = h5py.File(data_path, 'r')
+        self.dataset = hf.get('train')
 
     def __len__(self):
         """
@@ -224,7 +238,7 @@ class MiniimagenetDataset(torch.utils.data.Dataset):
         """
         Get an image
         """
-        return self.dataset.__getitem__(index)[0].permute(2, 0, 1)
+        return torch.Tensor(self.dataset[index])
 
 
 @option(Configs.dataset, 'Miniimagenet')
@@ -232,7 +246,7 @@ def miniimagenet(c: Configs):
     """
     Create miniimagenet dataset
     """
-    return MiniimagenetDataset(c.image_size)
+    return MiniimagenetDataset(c.image_size, c.data_path)
 
 
 def get_parser():
@@ -242,6 +256,8 @@ def get_parser():
     parser.add_argument('--beta_start', type=float, default=0.0001)
     parser.add_argument('--beta_end', type=float, default=0.02)
     parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--data_path', type=str)
+
     return parser
 
 
