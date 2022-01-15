@@ -27,6 +27,8 @@ from labml.configs import BaseConfigs, option
 from labml_helpers.device import DeviceConfigs
 from labml_nn.diffusion.ddpm import DenoiseDiffusion
 from labml_nn.diffusion.ddpm.unet import UNet
+import wandb
+from datetime import datetime
 
 
 class Configs(BaseConfigs):
@@ -117,6 +119,7 @@ class Configs(BaseConfigs):
 
             # Log samples
             tracker.save('sample', x)
+            wandb.log({"sample": [wandb.Image(sample) for sample in x]})
 
     def train(self):
         """
@@ -223,6 +226,15 @@ def mnist_dataset(c: Configs):
 
 
 def main():
+    run_name = datetime.now().strftime("train-%Y-%m-%d-%H-%M-%S")
+
+    wandb.init(
+        project="ho_ze_mila_original",
+        entity='cmap_vq',
+        config=None,
+        name=run_name,
+    )
+
     # Create experiment
     experiment.create(name='diffuse')
 
