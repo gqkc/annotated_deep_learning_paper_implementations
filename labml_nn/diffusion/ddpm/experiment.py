@@ -165,14 +165,15 @@ class Configs(BaseConfigs):
 
         return self.vqvae_model.decoder(quantized_vector)
 
-    def sample(self):
+    def sample(self, x=None):
         """
         ### Sample images
         """
         with torch.no_grad():
-            # $x_T \sim p(x_T) = \mathcal{N}(x_T; \mathbf{0}, \mathbf{I})$
-            x = torch.randn([self.n_samples, self.image_channels, self.image_size, self.image_size],
-                            device=self.device)
+            if x is None:
+                # $x_T \sim p(x_T) = \mathcal{N}(x_T; \mathbf{0}, \mathbf{I})$
+                x = torch.randn([self.n_samples, self.image_channels, self.image_size, self.image_size],
+                                device=self.device)
 
             # Remove noise for $T$ steps
             for t_ in monit.iterate('Sample', self.n_steps):
@@ -182,7 +183,37 @@ class Configs(BaseConfigs):
                 x = self.diffusion.p_sample(x, x.new_full((self.n_samples,), t, dtype=torch.long))
 
             samples = self.vq_decode(self.quantize_diffused(x))
-            wandb.log({"sample": [wandb.Image(sample) for sample in samples]})
+            if x is None:
+                wandb.log({"sample": [wandb.Image(sample) for sample in samples]})
+            return x, samples
+
+    def reconstruct(self):
+        with torch.no_grad():
+            # get original logits x0 from image data
+            number_of_rec = min(self.n_samples, self.data_loader.batch_size)
+            originals = next(iter(self.data_loader))[:number_of_rec].to(self.device)
+            # noise the original logits to T
+            t = torch.ones((originals.size(0),), device=originals.device, dtype=torch.long) * self.n_steps - 1
+            xT = self.diffusion.q_sample(x0=originals, t=t)
+            # denoise the xT to get x0_tilde
+            x0_tilde, reconstructions = self.sample(x=xT)
+            # get the l2 distance between original logits and reconstructions
+            l2 = torch.square(originals - x0_tilde).mean()
+            # get the rank of the original code in reconstructions
+            max_values = (x0_tilde.gather(1, self.vqvae_model.codebook(originals).unsqueeze(1)) < x0_tilde)
+            rank = max_values.sum(dim=1).float().mean()
+            # plot xT to check if it seems gaussian
+            xT_ = xT.cpu().detach().view(xT.size(0), xT.size(1), -1)
+            # xT_lines = [xT_[0, :, i] for i in range(xT_.size(-1))]
+            xT_lines = [originals[0, :, 0, 0].cpu().detach(), xT_[0, :, 0]]
+            xT_lines_plot = wandb.plot.line_series(xs=range(xT.size(1)), ys=xT_lines,
+                                                   keys=["x0[0,0,0,:]", "xT[0,0,0,:]"],
+                                                   title="logits", xname="Codebook vectors")
+            wandb.log({"rank": rank,
+                       "l2": l2,
+                       "reconstructions": [wandb.Image(image) for image in reconstructions],
+                       "images": [wandb.Image(image) for image in self.vq_decode(originals)],
+                       "xT_mean": xT.mean(), "xT": xT_lines_plot})
 
     def train(self):
         """
@@ -211,9 +242,11 @@ class Configs(BaseConfigs):
         """
         for _ in monit.loop(self.epochs):
             # Train the model
-            self.train()
+            # self.train()
             # Sample some images
-            self.sample()
+            # self.sample()
+            # reconstruct()
+            self.reconstruct()
             # Save the model
             torch.save(self.eps_model, self.eps_model_save_path)
 
