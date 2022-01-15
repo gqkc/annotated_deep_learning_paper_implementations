@@ -170,7 +170,8 @@ class Configs(BaseConfigs):
         ### Sample images
         """
         with torch.no_grad():
-            if x is None:
+            sampling = x is None
+            if sampling:
                 # $x_T \sim p(x_T) = \mathcal{N}(x_T; \mathbf{0}, \mathbf{I})$
                 x = torch.randn([self.n_samples, self.image_channels, self.image_size, self.image_size],
                                 device=self.device)
@@ -183,7 +184,7 @@ class Configs(BaseConfigs):
                 x = self.diffusion.p_sample(x, x.new_full((self.n_samples,), t, dtype=torch.long))
 
             samples = self.vq_decode(self.quantize_diffused(x))
-            if x is None:
+            if sampling:
                 wandb.log({"sample": [wandb.Image(sample) for sample in samples]})
             return x, samples
 
