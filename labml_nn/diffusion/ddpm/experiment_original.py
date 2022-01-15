@@ -229,7 +229,7 @@ def main():
     run_name = datetime.now().strftime("train-%Y-%m-%d-%H-%M-%S")
 
     wandb.init(
-        project="ho_ze_mila_original",
+        project="ho_original",
         entity='cmap_vq',
         config=None,
         name=run_name,
