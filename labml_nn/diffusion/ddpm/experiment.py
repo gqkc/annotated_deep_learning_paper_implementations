@@ -96,7 +96,7 @@ class Configs(BaseConfigs):
         pad = self.image_size % 2 + 1
         vqvae_model = VectorQuantizedVAE(3, self.image_channels, self.k,
                                          pad=pad).to(self.device)
-        vqvae_model.load_state_dict(torch.load(self.vq_path, map_location=self.device))
+        # vqvae_model.load_state_dict(torch.load(self.vq_path, map_location=self.device))
         vqvae_model.eval()
         return vqvae_model
 
@@ -191,6 +191,10 @@ class Configs(BaseConfigs):
                 wandb.log({"sample": [wandb.Image(sample) for sample in samples]})
             return x, samples
 
+    def get_distances(self, input):
+        weight = self.vqvae_model.codebook.embedding.weight.view(1, self.k, self.image_channels, 1, 1)
+        return (input.unsqueeze(1) - weight).square().sum(1)
+
     def reconstruct(self):
         with torch.no_grad():
             # get original logits x0 from image data
@@ -204,8 +208,9 @@ class Configs(BaseConfigs):
             # get the l2 distance between original logits and reconstructions
             l2 = torch.square(originals - x0_tilde).mean()
             # get the rank of the original code in reconstructions
-            # max_values = (x0_tilde.gather(1, self.vqvae_model.codebook(originals).unsqueeze(1)) < x0_tilde)
-            # rank = max_values.sum(dim=1).float().mean()
+            dist = self.get_distances(x0_tilde)
+            max_values = (dist.gather(1, self.vqvae_model.codebook(originals).unsqueeze(1)) > dist)
+            rank = max_values.sum(dim=1).float().mean()
             # plot xT to check if it seems gaussian
             xT_ = xT.cpu().detach().view(xT.size(0), xT.size(1), -1)
             # xT_lines = [xT_[0, :, i] for i in range(xT_.size(-1))]
@@ -213,11 +218,11 @@ class Configs(BaseConfigs):
             xT_lines_plot = wandb.plot.line_series(xs=range(xT.size(1)), ys=xT_lines,
                                                    keys=["x0[0,0,0,:]", "xT[0,0,0,:]"],
                                                    title="logits", xname="Codebook vectors")
-            wandb.log({  # "rank": rank,
-                "l2": l2,
-                "reconstructions": [wandb.Image(image) for image in reconstructions],
-                "images": [wandb.Image(image) for image in self.vq_decode(originals)],
-                "xT_mean": xT.mean(), "xT": xT_lines_plot})
+            wandb.log({"rank": rank,
+                       "l2": l2,
+                       "reconstructions": [wandb.Image(image) for image in reconstructions],
+                       "images": [wandb.Image(image) for image in self.vq_decode(self.quantize_diffused(originals))],
+                       "xT_mean": xT.mean(), "xT": xT_lines_plot})
 
     def train(self):
         """
