@@ -196,7 +196,7 @@ class Configs(BaseConfigs):
 
     def get_distances(self, input):
         weight = self.vqvae_model.codebook.embedding.weight.view(1, self.k, self.image_channels, 1, 1)
-        return (input.unsqueeze(1) - weight).square().sum(1)
+        return (input.unsqueeze(1) - weight).square().sum(2)
 
     def reconstruct(self):
         with torch.no_grad():
@@ -256,7 +256,7 @@ class Configs(BaseConfigs):
         """
         for _ in monit.loop(self.epochs):
             # Train the model
-            #self.train()
+            self.train()
             # Sample some images
             # self.sample()
             # reconstruct()
