@@ -98,7 +98,7 @@ class Configs(BaseConfigs):
     def vq_load(self):
         vqvae_model = VectorQuantizedVAE(3, self.image_channels, self.k,
                                          pad=self.pad).to(self.device)
-        # vqvae_model.load_state_dict(torch.load(self.vq_path, map_location=self.device))
+        vqvae_model.load_state_dict(torch.load(self.vq_path, map_location=self.device))
         vqvae_model.eval()
         return vqvae_model
 
