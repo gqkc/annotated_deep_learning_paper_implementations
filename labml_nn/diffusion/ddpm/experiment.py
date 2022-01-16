@@ -93,7 +93,7 @@ class Configs(BaseConfigs):
     # path to the data
     data_path: str
 
-    pad:int=1
+    pad: int = 1
 
     def vq_load(self):
         vqvae_model = VectorQuantizedVAE(3, self.image_channels, self.k,
@@ -221,11 +221,12 @@ class Configs(BaseConfigs):
             # xT_lines_plot = wandb.plot.line_series(xs=range(xT.size(1)), ys=xT_lines,
             #                                       keys=["x0[0,0,0,:]", "xT[0,0,0,:]"],
             #                                       title="logits", xname="Codebook vectors")
-            wandb.log({"rank": rank,
+            wandb.log({"rank": rank.detach().cpu(),
                        "l2": l2,
-                       "reconstructions": [wandb.Image(image) for image in reconstructions],
-                       "images": [wandb.Image(image) for image in self.vq_decode(self.quantize_diffused(originals))],
-                       "xT_mean": xT.mean()  # , "xT": xT_lines_plot
+                       "reconstructions": [wandb.Image(image) for image in reconstructions.detach().cpu()],
+                       "images": [wandb.Image(image) for image in
+                                  self.vq_decode(self.quantize_diffused(originals)).detach().cpu()],
+                       "xT_mean": xT.mean().item()  # , "xT": xT_lines_plot
                        })
 
     def train(self):
