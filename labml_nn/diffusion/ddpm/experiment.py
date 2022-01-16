@@ -52,7 +52,7 @@ class Configs(BaseConfigs):
     # Image size
     image_size: int = 32
     # Number of channels in the initial feature map
-    n_channels: int = 64
+    n_channels: int = 128
     # The list of channel numbers at each resolution.
     # The number of channels is `channel_multipliers[i] * n_channels`
     channel_multipliers: List[int] = [1, 2, 2, 4]
@@ -280,6 +280,7 @@ def get_parser():
     parser.add_argument('--k', type=int, help="number of codebooks", default=64)
     parser.add_argument('--dataset', type=str, default="mini84")
     parser.add_argument('--pad', type=int, default=1)
+    parser.add_argument('--n_channels', type=int, default=128)
 
     return parser
 
