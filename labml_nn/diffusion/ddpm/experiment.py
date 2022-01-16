@@ -30,6 +30,7 @@ from pytorch_vqvae.modules import VectorQuantizedVAE
 from labml_nn.diffusion.ddpm import DenoiseDiffusion
 from labml_nn.diffusion.ddpm.unet import UNet
 from torch.utils.data.dataloader import default_collate
+from labml_nn.diffusion.dataset import MiniimagenetDataset
 
 
 class Configs(BaseConfigs):
@@ -212,17 +213,18 @@ class Configs(BaseConfigs):
             max_values = (dist.gather(1, self.vqvae_model.codebook(originals).unsqueeze(1)) > dist)
             rank = max_values.sum(dim=1).float().mean()
             # plot xT to check if it seems gaussian
-            xT_ = xT.cpu().detach().view(xT.size(0), xT.size(1), -1)
+            #xT_ = xT.cpu().detach().view(xT.size(0), xT.size(1), -1)
             # xT_lines = [xT_[0, :, i] for i in range(xT_.size(-1))]
-            xT_lines = [originals[0, :, 0, 0].cpu().detach(), xT_[0, :, 0]]
-            xT_lines_plot = wandb.plot.line_series(xs=range(xT.size(1)), ys=xT_lines,
-                                                   keys=["x0[0,0,0,:]", "xT[0,0,0,:]"],
-                                                   title="logits", xname="Codebook vectors")
+            #xT_lines = [originals[0, :, 0, 0].cpu().detach(), xT_[0, :, 0]]
+            #xT_lines_plot = wandb.plot.line_series(xs=range(xT.size(1)), ys=xT_lines,
+            #                                       keys=["x0[0,0,0,:]", "xT[0,0,0,:]"],
+            #                                       title="logits", xname="Codebook vectors")
             wandb.log({"rank": rank,
                        "l2": l2,
                        "reconstructions": [wandb.Image(image) for image in reconstructions],
                        "images": [wandb.Image(image) for image in self.vq_decode(self.quantize_diffused(originals))],
-                       "xT_mean": xT.mean(), "xT": xT_lines_plot})
+                       "xT_mean": xT.mean()#, "xT": xT_lines_plot
+                       })
 
     def train(self):
         """
@@ -258,32 +260,6 @@ class Configs(BaseConfigs):
             self.reconstruct()
             # Save the model
             torch.save(self.eps_model, self.eps_model_save_path)
-
-
-class MiniimagenetDataset(torch.utils.data.Dataset):
-    """
-    ### Mini imagenet dataset
-    # you can download it with !gdown --id 1Ewc4jLHtxgXsD40IVJrBcjVSURQcYKRg  (12Go)
-    """
-
-    def __init__(self, image_size: int, data_path: str):
-        super().__init__()
-        import h5py
-
-        hf = h5py.File(data_path, 'r')
-        self.dataset = hf.get('train')
-
-    def __len__(self):
-        """
-        Size of the dataset
-        """
-        return len(self.dataset)
-
-    def __getitem__(self, index: int):
-        """
-        Get an image
-        """
-        return torch.Tensor(self.dataset[index])
 
 
 @option(Configs.dataset, 'Miniimagenet')
