@@ -75,6 +75,8 @@ class Configs(BaseConfigs):
 
     vq_path = "data/vqvae_mini.pt"
 
+    k: int = 64
+
     # Dataset
     dataset: torch.utils.data.Dataset
     # Dataloader
@@ -91,8 +93,9 @@ class Configs(BaseConfigs):
     data_path: str
 
     def vq_load(self):
-        vqvae_model = VectorQuantizedVAE(3, 64, 64,
-                                         pad=1).to(self.device)
+        pad = self.image_size % 2 + 1
+        vqvae_model = VectorQuantizedVAE(3, self.image_channels, self.k,
+                                         pad=pad).to(self.device)
         vqvae_model.load_state_dict(torch.load(self.vq_path, map_location=self.device))
         vqvae_model.eval()
         return vqvae_model
@@ -294,8 +297,11 @@ def get_parser():
     parser.add_argument('--beta_end', type=float, default=0.02)
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument("--channel_multipliers", default=[1, 2, 2, 4], nargs='+', type=int, help="channel multipliers")
-    parser.add_argument('--data_path', type=str)
-
+    parser.add_argument('--data_path', type=str, required=True)
+    parser.add_argument('--vq_path', type=str, required=True)
+    parser.add_argument('--image_channels', type=int, help="image channels = hidden size of the vqvae", default=32)
+    parser.add_argument('--image_size', type=int, help="image size", default=32)
+    parser.add_argument('--k', type=int, help="number of codebooks", default=64)
     return parser
 
 
