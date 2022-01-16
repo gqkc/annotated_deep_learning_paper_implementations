@@ -221,7 +221,7 @@ class Configs(BaseConfigs):
             # xT_lines_plot = wandb.plot.line_series(xs=range(xT.size(1)), ys=xT_lines,
             #                                       keys=["x0[0,0,0,:]", "xT[0,0,0,:]"],
             #                                       title="logits", xname="Codebook vectors")
-            wandb.log({"rank": rank.detach().cpu(),
+            wandb.log({"rank": rank.item(),
                        "l2": l2,
                        "reconstructions": [wandb.Image(image) for image in reconstructions.detach().cpu()],
                        "images": [wandb.Image(image) for image in
@@ -256,7 +256,7 @@ class Configs(BaseConfigs):
         """
         for _ in monit.loop(self.epochs):
             # Train the model
-            self.train()
+            #self.train()
             # Sample some images
             # self.sample()
             # reconstruct()
