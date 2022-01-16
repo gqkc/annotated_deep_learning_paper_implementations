@@ -35,7 +35,7 @@ class MiniimagenetDataset(torch.utils.data.Dataset):
 
 
 
-class MiniImagenet(Dataset):
+class MiniImagenetMax(Dataset):
     """Dataset for mini-Imagenet.
     This dataset was introducedd in https://arxiv.org/abs/1606.04080, the actual files
     were downloaded from https://github.com/tristandeleu/pytorch-meta. This Dataset

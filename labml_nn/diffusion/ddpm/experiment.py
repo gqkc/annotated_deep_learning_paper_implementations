@@ -30,7 +30,7 @@ from pytorch_vqvae.modules import VectorQuantizedVAE
 from labml_nn.diffusion.ddpm import DenoiseDiffusion
 from labml_nn.diffusion.ddpm.unet import UNet
 from torch.utils.data.dataloader import default_collate
-from labml_nn.diffusion.dataset import MiniimagenetDataset
+from labml_nn.diffusion.dataset import MiniimagenetDataset, MiniImagenetMax
 
 
 class Configs(BaseConfigs):
@@ -93,10 +93,11 @@ class Configs(BaseConfigs):
     # path to the data
     data_path: str
 
+    pad:int=1
+
     def vq_load(self):
-        pad = self.image_size % 2 + 1
         vqvae_model = VectorQuantizedVAE(3, self.image_channels, self.k,
-                                         pad=pad).to(self.device)
+                                         pad=self.pad).to(self.device)
         # vqvae_model.load_state_dict(torch.load(self.vq_path, map_location=self.device))
         vqvae_model.eval()
         return vqvae_model
@@ -110,6 +111,7 @@ class Configs(BaseConfigs):
         return collate_fn_vq_
 
     def init(self, **kwargs):
+
         self.is_attention = [False] * len(self.channel_multipliers)
         self.is_attention[-1] = True
 
@@ -213,17 +215,17 @@ class Configs(BaseConfigs):
             max_values = (dist.gather(1, self.vqvae_model.codebook(originals).unsqueeze(1)) > dist)
             rank = max_values.sum(dim=1).float().mean()
             # plot xT to check if it seems gaussian
-            #xT_ = xT.cpu().detach().view(xT.size(0), xT.size(1), -1)
+            # xT_ = xT.cpu().detach().view(xT.size(0), xT.size(1), -1)
             # xT_lines = [xT_[0, :, i] for i in range(xT_.size(-1))]
-            #xT_lines = [originals[0, :, 0, 0].cpu().detach(), xT_[0, :, 0]]
-            #xT_lines_plot = wandb.plot.line_series(xs=range(xT.size(1)), ys=xT_lines,
+            # xT_lines = [originals[0, :, 0, 0].cpu().detach(), xT_[0, :, 0]]
+            # xT_lines_plot = wandb.plot.line_series(xs=range(xT.size(1)), ys=xT_lines,
             #                                       keys=["x0[0,0,0,:]", "xT[0,0,0,:]"],
             #                                       title="logits", xname="Codebook vectors")
             wandb.log({"rank": rank,
                        "l2": l2,
                        "reconstructions": [wandb.Image(image) for image in reconstructions],
                        "images": [wandb.Image(image) for image in self.vq_decode(self.quantize_diffused(originals))],
-                       "xT_mean": xT.mean()#, "xT": xT_lines_plot
+                       "xT_mean": xT.mean()  # , "xT": xT_lines_plot
                        })
 
     def train(self):
@@ -262,14 +264,6 @@ class Configs(BaseConfigs):
             torch.save(self.eps_model, self.eps_model_save_path)
 
 
-@option(Configs.dataset, 'Miniimagenet')
-def miniimagenet(c: Configs):
-    """
-    Create miniimagenet dataset
-    """
-    return MiniimagenetDataset(c.image_size, c.data_path)
-
-
 def get_parser():
     import argparse
     parser = argparse.ArgumentParser(description='parser')
@@ -283,6 +277,9 @@ def get_parser():
     parser.add_argument('--image_channels', type=int, help="image channels = hidden size of the vqvae", default=32)
     parser.add_argument('--image_size', type=int, help="image size", default=32)
     parser.add_argument('--k', type=int, help="number of codebooks", default=64)
+    parser.add_argument('--dataset', type=str, default="mini84")
+    parser.add_argument('--pad', type=int, default=1)
+
     return parser
 
 
@@ -306,8 +303,14 @@ def main():
     # Create configurations
     configs = Configs()
 
+    if args.dataset == "mini84":
+        dataset = MiniImagenetMax(args.data_path)
+    else:
+        dataset = MiniimagenetDataset(args.image_size, args.data_path)
+    params = vars(args)
+    params["dataset"] = dataset
     # Set configurations. You can override the defaults by passing the values in the dictionary.
-    experiment.configs(configs, vars(args))
+    experiment.configs(configs, params)
 
     # Initialize
     configs.init(run_name=run_name)
