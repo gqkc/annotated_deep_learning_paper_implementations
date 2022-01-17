@@ -15,21 +15,22 @@ Save the images inside [`data/celebA` folder](#dataset_path).
 The paper had used a exponential moving average of the model with a decay of $0.9999$. We have skipped this for
 simplicity.
 """
+from datetime import datetime
 from typing import List
 
 import torch
 import torch.utils.data
 import torchvision
+import wandb
 from PIL import Image
-
 from labml import lab, tracker, experiment, monit
 from labml.configs import BaseConfigs, option
 from labml_helpers.device import DeviceConfigs
+from torchvision import transforms
+
+from labml_nn.diffusion.dataset import MiniimagenetDataset, MiniImagenetMax, MiniImagenet128
 from labml_nn.diffusion.ddpm import DenoiseDiffusion
 from labml_nn.diffusion.ddpm.unet import UNet
-import wandb
-from datetime import datetime
-from labml_nn.diffusion.dataset import MiniimagenetDataset, MiniImagenetMax
 
 
 class Configs(BaseConfigs):
@@ -258,9 +259,17 @@ def main():
     if args.dataset == "mini84":
         image_size = 84
         dataset = MiniImagenetMax(args.data_path)
-    else:
+    elif args.dataset == "mini128":
+        transform = transforms.Compose([transforms.Resize((128, 128)),
+                                        transforms.ToTensor(),
+                                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                                        ])
+        dataset = MiniImagenet128(args.data_path, train=True, transform=transform, download=True)
+        image_size = 128
+    elif args.dataset == "minih5":
         image_size = 128
         dataset = MiniimagenetDataset(image_size, args.data_path)
+
     params = vars(args)
     params["dataset"] = dataset
     params["image_size"] = image_size
