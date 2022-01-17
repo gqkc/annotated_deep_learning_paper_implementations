@@ -29,6 +29,7 @@ from labml_nn.diffusion.ddpm import DenoiseDiffusion
 from labml_nn.diffusion.ddpm.unet import UNet
 import wandb
 from datetime import datetime
+from labml_nn.diffusion.dataset import MiniimagenetDataset, MiniImagenetMax
 
 
 class Configs(BaseConfigs):
@@ -225,6 +226,16 @@ def mnist_dataset(c: Configs):
     return MNISTDataset(c.image_size)
 
 
+def get_parser():
+    import argparse
+    parser = argparse.ArgumentParser(description='parser')
+    parser.add_argument('--data_path', type=str, required=True)
+    parser.add_argument('--dataset', type=str, default="mini")
+    parser.add_argument('--n_channels', type=int, default=128)
+
+    return parser
+
+
 def main():
     run_name = datetime.now().strftime("train-%Y-%m-%d-%H-%M-%S")
 
@@ -241,6 +252,18 @@ def main():
     # Create configurations
     configs = Configs()
 
+    parser = get_parser()
+    args = parser.parse_args()
+
+    if args.dataset == "mini84":
+        image_size = 84
+        dataset = MiniImagenetMax(args.data_path)
+    else:
+        image_size = 128
+        dataset = MiniimagenetDataset(image_size, args.data_path)
+    params = vars(args)
+    params["dataset"] = dataset
+    params["image_size"] = image_size
     # Set configurations. You can override the defaults by passing the values in the dictionary.
     experiment.configs(configs, {
     })
