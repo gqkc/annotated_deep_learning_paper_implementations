@@ -79,6 +79,8 @@ class Configs(BaseConfigs):
     # Adam optimizer
     optimizer: torch.optim.Adam
 
+    data_path: str
+
     def init(self):
         # Create $\textcolor{cyan}{\epsilon_\theta}(x_t, t)$ model
         self.eps_model = UNet(
@@ -227,6 +229,36 @@ def mnist_dataset(c: Configs):
     return MNISTDataset(c.image_size)
 
 
+@option(Configs.dataset, 'mini84')
+def mini84_dataset(c: Configs):
+    """
+    Create mini imagenet dataset with 84 pixels
+    """
+    return MiniImagenetMax(c.data_path)
+
+
+@option(Configs.dataset, 'mini128')
+def mini128_dataset(c: Configs):
+    """
+    Create mini imagenet dataset with 128 pixels
+    """
+    transform = transforms.Compose([transforms.Resize((128, 128)),
+                                    transforms.ToTensor(),
+                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                                    ])
+    dataset = MiniImagenet128(c.data_path, train=True, transform=transform, download=True)
+    return dataset
+
+
+@option(Configs.dataset, 'minih5')
+def minih5_dataset(c: Configs):
+    """
+    Create mini imagenet dataset with 128 pixels saved in h5
+    """
+    dataset = MiniimagenetDataset(c.image_size, c.data_path)
+    return dataset
+
+
 def get_parser():
     import argparse
     parser = argparse.ArgumentParser(description='parser')
@@ -256,26 +288,11 @@ def main():
     parser = get_parser()
     args = parser.parse_args()
 
-    if args.dataset == "mini84":
-        image_size = 84
-        dataset = MiniImagenetMax(args.data_path)
-    elif args.dataset == "mini128":
-        transform = transforms.Compose([transforms.Resize((128, 128)),
-                                        transforms.ToTensor(),
-                                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-                                        ])
-        dataset = MiniImagenet128(args.data_path, train=True, transform=transform, download=True)
-        image_size = 128
-    elif args.dataset == "minih5":
-        image_size = 128
-        dataset = MiniimagenetDataset(image_size, args.data_path)
-
-    params = vars(args)
-    params["dataset"] = dataset
-    params["image_size"] = image_size
+    # params["dataset"] = dataset
+    # params["image_size"] = image_size
     # Set configurations. You can override the defaults by passing the values in the dictionary.
-    experiment.configs(configs, {
-    })
+    experiment.configs(configs, vars(args)
+                       )
 
     # Initialize
     configs.init()
