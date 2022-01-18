@@ -267,6 +267,7 @@ def get_parser():
     parser.add_argument('--data_path', type=str, required=True)
     parser.add_argument('--dataset', type=str, default="mini")
     parser.add_argument('--n_channels', type=int, default=128)
+    parser.add_argument('--batch_size', type=int, default=64)
 
     return parser
 
