@@ -135,7 +135,7 @@ class Configs(BaseConfigs):
             # Increment global step
             tracker.add_global_step()
             # Move data to device
-            if type(data) == type(list):
+            if type(data) == list:
                 data = data[0]
             data = data.to(self.device)
 
