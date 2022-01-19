@@ -148,9 +148,13 @@ class Configs(BaseConfigs):
             samples_chain = self.vq.vq_decode(self.vq.quantize_diffused(logits_chain_.to(self.device)))
             # Log samples
             samples = self.vq.vq_decode(self.vq.quantize_diffused(x.to(self.device)))
-            # Log samples
-            # tracker.save('sample', x)
-            wandb.log({"sample": [wandb.Image(sample) for sample in samples], "samples_chain": samples_chain})
+            # just plot original to see the quality of the reconstructions
+            number_of_rec = min(self.n_samples, self.data_loader.batch_size)
+            originals = next(iter(self.data_loader))[:number_of_rec].to(self.device)
+            wandb.log(
+                {"sample": [wandb.Image(sample) for sample in samples], "samples_chain": samples_chain, "originals": [
+                    wandb.Image(image) for image in
+                    self.vq.vq_decode(self.vq.quantize_diffused(originals))]})
 
     def train(self):
         """
