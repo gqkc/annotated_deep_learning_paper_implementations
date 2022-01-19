@@ -28,4 +28,4 @@ if __name__ == '__main__':
         new_dataset.append(data[0])
     new_dataset = torch.cat(new_dataset, dim=0)
     hf = h5py.File(os.path.join(ROOT_DIR, 'mini128.h5'), 'w')
-    hf.create_dataset('train', data=new_dataset)
+    hf.create_dataset('train_dataset', data=new_dataset)
