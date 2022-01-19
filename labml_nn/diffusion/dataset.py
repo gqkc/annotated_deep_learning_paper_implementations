@@ -22,6 +22,7 @@ class MiniimagenetDataset(torch.utils.data.Dataset):
         import h5py
 
         hf = h5py.File(data_path, 'r')
+        assert os.path.exists(data_path)
         self.dataset = hf.get('train_dataset')
         assert len(self.dataset) > 0
 
