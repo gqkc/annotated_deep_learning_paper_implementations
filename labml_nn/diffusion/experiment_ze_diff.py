@@ -148,13 +148,11 @@ class Configs(BaseConfigs):
             samples_chain = self.vq.vq_decode(self.vq.quantize_diffused(logits_chain_.to(self.device)))
             # Log samples
             samples = self.vq.vq_decode(self.vq.quantize_diffused(x.to(self.device)))
-            # just plot original to see the quality of the reconstructions
-            number_of_rec = min(self.n_samples, self.data_loader.batch_size)
-            originals = next(iter(self.data_loader))[:number_of_rec].to(self.device)
+
             wandb.log(
-                {"sample": [wandb.Image(sample) for sample in samples], "samples_chain": samples_chain, "originals": [
-                    wandb.Image(image) for image in
-                    self.vq.vq_decode(self.vq.quantize_diffused(originals))]})
+                {"sample": [wandb.Image(sample) for sample in samples], "samples_chain": [wandb.Image(sample) for sample
+                                                                                          in samples_chain],
+                 })
 
     def train(self):
         """
@@ -171,16 +169,16 @@ class Configs(BaseConfigs):
             data = data.to(self.device)
 
             # Make the gradients zero
-            self.optimizer.zero_grad()
+            # self.optimizer.zero_grad()
             # Calculate loss
-            loss = self.diffusion.loss(data)
+            # loss = self.diffusion.loss(data)
             # Compute gradients
-            loss.backward()
+            # loss.backward()
             # Take an optimization step
-            self.optimizer.step()
+            # self.optimizer.step()
             # Track the loss
-            wandb.log({"loss": loss.cpu().detach()})
-            tracker.save('loss', loss)
+            # wandb.log({"loss": loss.cpu().detach()})
+            # tracker.save('loss', loss)
 
     def run(self):
         """
@@ -188,7 +186,7 @@ class Configs(BaseConfigs):
         """
         for _ in monit.loop(self.epochs):
             # Train the model
-            self.train()
+            # self.train()
             # Sample some images
             self.sample()
             # New line in the console
@@ -283,8 +281,6 @@ def mini128_dataset(c: Configs):
                                     ])
     dataset = MiniImagenet128(c.data_path, train=True, transform=transform, download=True)
     return dataset
-
-
 
 
 @option(Configs.dataset, 'minih5')
