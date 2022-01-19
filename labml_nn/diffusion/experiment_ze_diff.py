@@ -179,6 +179,7 @@ class Configs(BaseConfigs):
             # Take an optimization step
             self.optimizer.step()
             # Track the loss
+            wandb.log({"loss": loss.cpu().detach()})
             tracker.save('loss', loss)
 
     def run(self):
