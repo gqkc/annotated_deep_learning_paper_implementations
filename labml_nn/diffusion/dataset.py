@@ -22,7 +22,7 @@ class MiniimagenetDataset(torch.utils.data.Dataset):
         import h5py
 
         hf = h5py.File(data_path, 'r')
-        self.dataset = hf.get('train')
+        self.dataset = hf.get('train_dataset')
 
     def __len__(self):
         """
