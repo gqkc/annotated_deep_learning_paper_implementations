@@ -23,6 +23,7 @@ class MiniimagenetDataset(torch.utils.data.Dataset):
 
         hf = h5py.File(data_path, 'r')
         self.dataset = hf.get('train_dataset')
+        assert len(self.dataset) > 0
 
     def __len__(self):
         """
@@ -35,8 +36,6 @@ class MiniimagenetDataset(torch.utils.data.Dataset):
         Get an image
         """
         return torch.Tensor(self.dataset[index])
-
-
 
 
 class MiniImagenetMax(Dataset):
