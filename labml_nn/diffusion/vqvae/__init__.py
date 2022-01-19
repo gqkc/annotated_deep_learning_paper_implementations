@@ -7,7 +7,10 @@ from torch.utils.data.dataloader import default_collate
 
 def collate_fn_mila(vq_vae):
     def collate_fn_vq_(x):
-        batch = default_collate(x)[0].to(next(vq_vae.parameters()).device)
+        batch = default_collate(x)
+        if batch.__class__ == list:
+            batch[0]
+        batch=batch.to(next(vq_vae.parameters()).device)
         z_e_x = vq_vae.encoder(batch)
         return z_e_x.detach()
 
