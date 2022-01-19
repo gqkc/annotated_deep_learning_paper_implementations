@@ -195,7 +195,7 @@ class Configs(BaseConfigs):
             tracker.new_line()
             # Save the model
             # experiment.save_checkpoint()
-            torch.save(self.eps_model.state_dict(), self.eps_model_save_path)
+            torch.save(self.eps_model, self.eps_model_save_path)
 
 
 class CelebADataset(torch.utils.data.Dataset):
