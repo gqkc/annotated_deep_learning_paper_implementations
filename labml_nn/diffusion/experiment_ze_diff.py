@@ -33,7 +33,7 @@ from labml_nn.diffusion.ddpm import DenoiseDiffusion
 from labml_nn.diffusion.ddpm.unet import UNet
 from labml_nn.diffusion.vqvae import MilaZeVQ
 import os
-
+from labml_nn import ROOT_DIR
 
 class Configs(BaseConfigs):
     """
@@ -85,6 +85,9 @@ class Configs(BaseConfigs):
 
     k: int
     vq_path: str
+    pad_vqvae: int
+    eps_model_save_path:str
+    vq:MilaZeVQ
 
     def init(self):
         run_name = datetime.now().strftime("train-%Y-%m-%d-%H-%M-%S")
@@ -107,12 +110,13 @@ class Configs(BaseConfigs):
             n_steps=self.n_steps,
             device=self.device,
         )
-        self.vq = MilaZeVQ(device=self.device, k=self.k, latent_dim=self.n_channels, vq_path=self.vq_path)
+        self.vq = MilaZeVQ(device=self.device, k=self.k,num_channels=3, latent_dim=self.image_channels, vq_path=self.vq_path,
+                           pad_vqvae=self.pad_vqvae)
+        # Create dataloader
 
         self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True,
                                                        drop_last=True, collate_fn=self.vq.collate)
-        # Create dataloader
-        self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True, pin_memory=True)
+        #self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True, pin_memory=True)
         # Create optimizer
         self.optimizer = torch.optim.Adam(self.eps_model.parameters(), lr=self.learning_rate)
 
@@ -293,7 +297,9 @@ def get_parser():
     parser.add_argument('--vq_path', type=str, required=True)
     parser.add_argument('--k', type=int, required=True)
     parser.add_argument("--channel_multipliers", default=[1, 2, 2, 4], nargs='+', type=int, help="channel multipliers")
-
+    parser.add_argument('--pad_vqvae', type=int, default=1)
+    parser.add_argument('--image_channels', type=int, default=32, help="hidden dim of ze")
+    parser.add_argument('--image_size', type=int, default=32)
     return parser
 
 
