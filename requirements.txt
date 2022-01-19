@@ -10,4 +10,3 @@ gym[atari]
 opencv-python
 Pillow>=6.2.1
 git+https://github.com/gqkc/pytorch-vqvae.git@old
-git+https://github.com/maxjcohen/vqvae.git
