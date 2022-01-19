@@ -91,7 +91,7 @@ class ResidualBlock(Module):
     Each resolution is processed with two residual blocks.
     """
 
-    def __init__(self, in_channels: int, out_channels: int, time_channels: int, n_groups: int = 32):
+    def __init__(self, in_channels: int, out_channels: int, time_channels: int, n_groups: int = 1):
         """
         * `in_channels` is the number of input channels
         * `out_channels` is the number of input channels
@@ -142,7 +142,7 @@ class AttentionBlock(Module):
     This is similar to [transformer multi-head attention](../../transformers/mha.html).
     """
 
-    def __init__(self, n_channels: int, n_heads: int = 1, d_k: int = None, n_groups: int = 32):
+    def __init__(self, n_channels: int, n_heads: int = 1, d_k: int = None, n_groups: int = 1):
         """
         * `n_channels` is the number of channels in the input
         * `n_heads` is the number of heads in multi-head attention
@@ -371,7 +371,7 @@ class UNet(Module):
         self.up = nn.ModuleList(up)
 
         # Final normalization and convolution layer
-        self.norm = nn.GroupNorm(8, n_channels)
+        self.norm = nn.GroupNorm(1, n_channels)
         self.act = Swish()
         self.final = nn.Conv2d(in_channels, image_channels, kernel_size=(3, 3), padding=(1, 1))
 
