@@ -150,7 +150,8 @@ class Configs(BaseConfigs):
             samples = self.vq.vq_decode(self.vq.quantize_diffused(x.to(self.device)))
 
             wandb.log(
-                {"sample": [wandb.Image(sample) for sample in samples], "samples_chain": samples_chain})
+                {"sample": [wandb.Image(sample) for sample in samples], "samples_chain": [wandb.Image(sample) for sample
+                                                                                          in samples_chain]})
 
     def train(self):
         """
