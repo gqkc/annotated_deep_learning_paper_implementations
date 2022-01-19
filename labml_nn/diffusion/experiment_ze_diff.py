@@ -35,6 +35,7 @@ from labml_nn.diffusion.vqvae import MilaZeVQ
 import os
 from labml_nn import ROOT_DIR
 
+
 class Configs(BaseConfigs):
     """
     ## Configurations
@@ -86,8 +87,8 @@ class Configs(BaseConfigs):
     k: int
     vq_path: str
     pad_vqvae: int
-    eps_model_save_path:str
-    vq:MilaZeVQ
+    eps_model_save_path: str
+    vq: MilaZeVQ
 
     def init(self):
         run_name = datetime.now().strftime("train-%Y-%m-%d-%H-%M-%S")
@@ -110,13 +111,14 @@ class Configs(BaseConfigs):
             n_steps=self.n_steps,
             device=self.device,
         )
-        self.vq = MilaZeVQ(device=self.device, k=self.k,num_channels=3, latent_dim=self.image_channels, vq_path=self.vq_path,
+        self.vq = MilaZeVQ(device=self.device, k=self.k, num_channels=3, latent_dim=self.image_channels,
+                           vq_path=self.vq_path,
                            pad_vqvae=self.pad_vqvae)
         # Create dataloader
 
         self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True,
                                                        drop_last=True, collate_fn=self.vq.collate)
-        #self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True, pin_memory=True)
+        # self.data_loader = torch.utils.data.DataLoader(self.dataset, self.batch_size, shuffle=True, pin_memory=True)
         # Create optimizer
         self.optimizer = torch.optim.Adam(self.eps_model.parameters(), lr=self.learning_rate)
 
@@ -147,7 +149,7 @@ class Configs(BaseConfigs):
             # Log samples
             samples = self.vq.vq_decode(self.vq.quantize_diffused(x.to(self.device)))
             # Log samples
-            tracker.save('sample', x)
+            # tracker.save('sample', x)
             wandb.log({"sample": [wandb.Image(sample) for sample in samples], "samples_chain": samples_chain})
 
     def train(self):
