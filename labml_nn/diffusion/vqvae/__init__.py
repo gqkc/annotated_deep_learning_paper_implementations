@@ -1,6 +1,5 @@
 import torch
 import torch.utils.data
-from mixturevqvae.utils.collate import collate_fn_mila
 from pytorch_vqvae.modules import VectorQuantizedVAE
 from torch.utils.data import DataLoader
 from torch.utils.data.dataloader import default_collate
