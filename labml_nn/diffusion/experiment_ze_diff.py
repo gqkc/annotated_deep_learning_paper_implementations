@@ -99,16 +99,18 @@ class Configs(BaseConfigs):
         os.makedirs(path_to_model_save)
 
         # Create $\textcolor{cyan}{\epsilon_\theta}(x_t, t)$ model
+        self.eps_model = UNet(
+            image_channels=self.image_channels,
+            n_channels=self.n_channels,
+            ch_mults=self.channel_multipliers,
+            is_attn=self.is_attention,
+        ).to(self.device)
         if self.load_checkpoint is not None:
-            self.eps_model = torch.load(self.load_checkpoint, map_location=self.device)
-        else:
-            self.eps_model = UNet(
-                image_channels=self.image_channels,
-                n_channels=self.n_channels,
-                ch_mults=self.channel_multipliers,
-                is_attn=self.is_attention,
-            ).to(self.device)
-
+            eps_model = torch.load(self.load_checkpoint, map_location=self.device)
+            if eps_model.__class__ == self.eps_model.__class__:
+                self.eps_model = eps_model
+            else:
+                self.eps_model.load_state_dict(eps_model)
         # Create [DDPM class](index.html)
         self.diffusion = DenoiseDiffusion(
             eps_model=self.eps_model,
