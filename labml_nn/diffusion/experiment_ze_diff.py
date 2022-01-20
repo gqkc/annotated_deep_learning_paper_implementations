@@ -89,6 +89,7 @@ class Configs(BaseConfigs):
     pad_vqvae: int
     eps_model_save_path: str
     vq: MilaZeVQ
+    load_checkpoint: str
 
     def init(self):
         run_name = datetime.now().strftime("train-%Y-%m-%d-%H-%M-%S")
@@ -105,12 +106,15 @@ class Configs(BaseConfigs):
             is_attn=self.is_attention,
         ).to(self.device)
 
-        # Create [DDPM class](index.html)
-        self.diffusion = DenoiseDiffusion(
-            eps_model=self.eps_model,
-            n_steps=self.n_steps,
-            device=self.device,
-        )
+        if self.load_checkpoint is not None:
+            self.diffusion = torch.load(self.load_checkpoint, map_location=self.device)
+        else:
+            # Create [DDPM class](index.html)
+            self.diffusion = DenoiseDiffusion(
+                eps_model=self.eps_model,
+                n_steps=self.n_steps,
+                device=self.device,
+            )
         self.vq = MilaZeVQ(device=self.device, k=self.k, num_channels=3, latent_dim=self.image_channels,
                            vq_path=self.vq_path,
                            pad_vqvae=self.pad_vqvae)
@@ -309,6 +313,7 @@ def get_parser():
     parser.add_argument('--pad_vqvae', type=int, default=1)
     parser.add_argument('--image_channels', type=int, default=32, help="hidden dim of ze")
     parser.add_argument('--image_size', type=int, default=32)
+    parser.add_argument('--load_checkpoint', type=str, default=None)
     return parser
 
 
