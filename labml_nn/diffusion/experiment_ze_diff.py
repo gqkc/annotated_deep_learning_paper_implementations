@@ -15,6 +15,7 @@ Save the images inside [`data/celebA` folder](#dataset_path).
 The paper had used a exponential moving average of the model with a decay of $0.9999$. We have skipped this for
 simplicity.
 """
+import os
 from datetime import datetime
 from typing import List
 
@@ -23,17 +24,16 @@ import torch.utils.data
 import torchvision
 import wandb
 from PIL import Image
-from labml import lab, tracker, experiment, monit
+from labml import lab, experiment, monit
 from labml.configs import BaseConfigs, option
 from labml_helpers.device import DeviceConfigs
 from torchvision import transforms
 
+from labml_nn import ROOT_DIR
 from labml_nn.diffusion.dataset import MiniimagenetDataset, MiniImagenetMax, MiniImagenet128
 from labml_nn.diffusion.ddpm import DenoiseDiffusion
 from labml_nn.diffusion.ddpm.unet import UNet
 from labml_nn.diffusion.vqvae import MilaZeVQ
-import os
-from labml_nn import ROOT_DIR
 
 
 class Configs(BaseConfigs):
@@ -129,7 +129,7 @@ class Configs(BaseConfigs):
         self.optimizer = torch.optim.Adam(self.eps_model.parameters(), lr=self.learning_rate)
 
         # Image logging
-        tracker.set_image("sample", True)
+        #tracker.set_image("sample", True)
 
     def sample(self):
         """
@@ -170,9 +170,8 @@ class Configs(BaseConfigs):
         """
 
         # Iterate through the dataset
-        for data in monit.iterate('Train', self.data_loader):
+        for data in self.data_loader:
             # Increment global step
-            tracker.add_global_step()
             # Move data to device
             if type(data) == list:
                 data = data[0]
@@ -188,7 +187,7 @@ class Configs(BaseConfigs):
             self.optimizer.step()
             # Track the loss
             wandb.log({"loss": loss.cpu().detach()})
-            tracker.save('loss', loss)
+            #tracker.save('loss', loss)
 
     def run(self):
         """
@@ -200,7 +199,7 @@ class Configs(BaseConfigs):
             # Sample some images
             self.sample()
             # New line in the console
-            tracker.new_line()
+            #tracker.new_line()
             # Save the model
             # experiment.save_checkpoint()
             torch.save(self.eps_model, self.eps_model_save_path)
