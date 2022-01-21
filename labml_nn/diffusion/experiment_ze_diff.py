@@ -99,18 +99,19 @@ class Configs(BaseConfigs):
         os.makedirs(path_to_model_save)
 
         # Create $\textcolor{cyan}{\epsilon_\theta}(x_t, t)$ model
-        self.eps_model = UNet(
+        eps_model = UNet(
             image_channels=self.image_channels,
             n_channels=self.n_channels,
             ch_mults=self.channel_multipliers,
             is_attn=self.is_attention,
         ).to(self.device)
         if self.load_checkpoint is not None:
-            eps_model = torch.load(self.load_checkpoint, map_location=self.device)
-            if eps_model.__class__ == self.eps_model.__class__:
-                self.eps_model = eps_model
+            eps = torch.load(self.load_checkpoint, map_location=self.device)
+            if eps.__class__ == eps_model.__class__:
+                eps_model = eps
             else:
-                self.eps_model.load_state_dict(eps_model)
+                eps_model.load_state_dict(eps_model)
+        self.eps_model = eps_model
         # Create [DDPM class](index.html)
         self.diffusion = DenoiseDiffusion(
             eps_model=self.eps_model,
@@ -129,7 +130,7 @@ class Configs(BaseConfigs):
         self.optimizer = torch.optim.Adam(self.eps_model.parameters(), lr=self.learning_rate)
 
         # Image logging
-        #tracker.set_image("sample", True)
+        # tracker.set_image("sample", True)
 
     def sample(self):
         """
@@ -187,7 +188,7 @@ class Configs(BaseConfigs):
             self.optimizer.step()
             # Track the loss
             wandb.log({"loss": loss.cpu().detach()})
-            #tracker.save('loss', loss)
+            # tracker.save('loss', loss)
 
     def run(self):
         """
@@ -199,7 +200,7 @@ class Configs(BaseConfigs):
             # Sample some images
             self.sample()
             # New line in the console
-            #tracker.new_line()
+            # tracker.new_line()
             # Save the model
             # experiment.save_checkpoint()
             torch.save(self.eps_model, self.eps_model_save_path)
